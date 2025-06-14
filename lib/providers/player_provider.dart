@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/song.dart';
+import 'dart:math';
 
 enum RepeatMode { none, one, all }
 
@@ -43,6 +44,8 @@ class PlayerProvider extends ChangeNotifier {
   bool get isPlaying => _isPlaying;
   Duration get position => _position;
   Duration get duration => _duration;
+  List<Song> get queue => List.unmodifiable(_queue);
+  int get currentIndex => _currentIndex;
 
   // Set một queue mới (và phát bài tương ứng)
   Future<void> setQueue(List<Song> songs, {int startIndex = 0}) async {
@@ -68,7 +71,7 @@ class PlayerProvider extends ChangeNotifier {
     if (song != null && song.audioUrl.isNotEmpty) {
       try {
         await _audioPlayer.setUrl(song.audioUrl);
-        _audioPlayer.play();
+        await _audioPlayer.play();
         _isPlaying = true;
       } catch (_) {
         _isPlaying = false;
@@ -95,7 +98,7 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void next() async {
+  Future<void> next() async {
     if (_queue.isEmpty) return;
     if (_repeatMode == RepeatMode.one) {
       await _audioPlayer.seek(Duration.zero);
@@ -118,7 +121,7 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void previous() async {
+  Future<void> previous() async {
     if (_queue.isEmpty) return;
     if (_repeatMode == RepeatMode.one) {
       await _audioPlayer.seek(Duration.zero);
@@ -161,10 +164,28 @@ class PlayerProvider extends ChangeNotifier {
   int _getRandomIndex() {
     if (_queue.length <= 1) return _currentIndex;
     int newIndex = _currentIndex;
+    final rand = Random();
     while (newIndex == _currentIndex) {
-      newIndex = (DateTime.now().millisecondsSinceEpoch % _queue.length);
+      newIndex = rand.nextInt(_queue.length);
     }
     return newIndex;
+  }
+
+  // Add a song to the current queue (if not duplicate)
+  Future<void> addToQueue(Song song) async {
+    if (_queue.any((s) => s.id == song.id)) return;
+    _queue.add(song);
+    notifyListeners();
+  }
+
+  // Remove a song from the current queue
+  Future<void> removeFromQueue(Song song) async {
+    _queue.removeWhere((s) => s.id == song.id);
+    // Adjust currentIndex if needed
+    if (_currentIndex >= _queue.length) {
+      _currentIndex = _queue.isEmpty ? 0 : _queue.length - 1;
+    }
+    notifyListeners();
   }
 
   @override

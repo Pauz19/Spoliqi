@@ -103,6 +103,9 @@ class _SearchScreenState extends State<SearchScreen> {
               child: _tracks.isEmpty
                   ? const Center(child: Text('Không có kết quả nào.'))
                   : ListView.separated(
+                padding: const EdgeInsets.only(
+                  bottom: 54, // Chỉ cần chiều cao MiniPlayer!
+                ),
                 itemCount: _tracks.length,
                 separatorBuilder: (context, index) => const Divider(height: 1),
                 itemBuilder: (context, index) {
