@@ -7,6 +7,7 @@ import '../providers/player_provider.dart';
 import '../screens/player_screen.dart';
 import '../widgets/song_options.dart';
 import '../widgets/account_dialog.dart';
+import '../login_page.dart';
 import 'dart:math';
 
 class HomeScreen extends StatefulWidget {
@@ -31,7 +32,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _checkAuthStatus();
     _initFutures();
+  }
+
+  // Chỉ kiểm tra user == null, không kiểm tra emailVerified nữa để tránh vòng lặp
+  void _checkAuthStatus() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+              (route) => false,
+        );
+      });
+    }
   }
 
   void _initFutures() {
