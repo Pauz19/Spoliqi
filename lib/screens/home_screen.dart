@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/song.dart';
 import '../services/deezer_service.dart';
 import '../providers/player_provider.dart';
 import '../screens/player_screen.dart';
+import '../widgets/song_options.dart';
+import '../widgets/account_dialog.dart';
 import 'dart:math';
 
 class HomeScreen extends StatefulWidget {
@@ -94,8 +97,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userName = 'Pauz19';
-    final avatarUrl = 'https://i.scdn.co/image/ab6775700000ee85c6e2a7e1f7c0ceab811bc7bd';
+    final user = FirebaseAuth.instance.currentUser;
+    final userName = user?.displayName ?? user?.email ?? 'User';
+    final avatarUrl = user?.photoURL;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -106,9 +110,19 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundImage: NetworkImage(avatarUrl),
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AccountDialog(user: user),
+                      );
+                    },
+                    child: CircleAvatar(
+                      radius: 22,
+                      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      child: avatarUrl == null ? const Icon(Icons.person, color: Colors.white) : null,
+                      backgroundColor: Colors.grey[800],
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
@@ -185,10 +199,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onRefresh: _refresh,
                 child: ListView(
                   padding: const EdgeInsets.only(
-                    bottom: 54 + 12, // CHỈ cộng chiều cao MiniPlayer + dư 1 chút!
+                    bottom: 54 + 12,
                   ),
                   children: [
-                    // Playlist đề xuất section
                     FutureBuilder<List<dynamic>>(
                       future: _vpopFuture,
                       builder: (context, snapshot) {
@@ -250,6 +263,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       );
                                     },
+                                    onLongPress: () {
+                                      final song = Song(
+                                        id: track['id'].toString(),
+                                        title: track['title'] ?? 'Không rõ tên',
+                                        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
+                                        audioUrl: track['preview'] ?? '',
+                                        coverUrl: track['album']?['cover_big'] ?? '',
+                                      );
+                                      showSongOptions(context, song);
+                                    },
                                   );
                                 },
                               ),
@@ -258,7 +281,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                     ),
-                    // Top tracks section
                     FutureBuilder<List<dynamic>>(
                       future: _tracksFuture,
                       builder: (context, snapshot) {
@@ -323,6 +345,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       );
                                     },
+                                    onLongPress: () {
+                                      final song = Song(
+                                        id: track['id'].toString(),
+                                        title: track['title'] ?? 'Không rõ tên',
+                                        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
+                                        audioUrl: track['preview'] ?? '',
+                                        coverUrl: track['album']?['cover_big'] ?? '',
+                                      );
+                                      showSongOptions(context, song);
+                                    },
                                   );
                                 },
                               ),
@@ -371,6 +403,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       );
                                     },
+                                    onLongPress: () {
+                                      final song = Song(
+                                        id: track['id'].toString(),
+                                        title: track['title'] ?? 'Không rõ tên',
+                                        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
+                                        audioUrl: track['preview'] ?? '',
+                                        coverUrl: track['album']?['cover_big'] ?? '',
+                                      );
+                                      showSongOptions(context, song);
+                                    },
                                   );
                                 },
                               ),
@@ -409,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return ListView.separated(
       padding: const EdgeInsets.only(
-        bottom: 54 + 12, // CHỈ cộng chiều cao MiniPlayer + dư 1 chút!
+        bottom: 54 + 12,
       ),
       itemCount: searchResults.length,
       separatorBuilder: (context, i) => const Divider(height: 1, color: Colors.white12),
@@ -445,6 +487,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           },
+          onLongPress: () {
+            showSongOptions(context, song);
+          },
         );
       },
     );
@@ -455,8 +500,9 @@ class _HomeScreenState extends State<HomeScreen> {
 class _VpopSongCard extends StatelessWidget {
   final dynamic track;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
-  const _VpopSongCard({required this.track, this.onTap});
+  const _VpopSongCard({required this.track, this.onTap, this.onLongPress});
 
   @override
   Widget build(BuildContext context) {
@@ -466,6 +512,7 @@ class _VpopSongCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
         width: 120,
@@ -512,7 +559,8 @@ class _VpopSongCard extends StatelessWidget {
 class _SpotifyPlaylistTile extends StatelessWidget {
   final dynamic track;
   final VoidCallback? onTap;
-  const _SpotifyPlaylistTile({required this.track, this.onTap});
+  final VoidCallback? onLongPress;
+  const _SpotifyPlaylistTile({required this.track, this.onTap, this.onLongPress});
 
   @override
   Widget build(BuildContext context) {
@@ -532,6 +580,7 @@ class _SpotifyPlaylistTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
@@ -578,7 +627,8 @@ class _SpotifyPlaylistTile extends StatelessWidget {
 class _SpotifyCardVertical extends StatelessWidget {
   final dynamic track;
   final VoidCallback? onTap;
-  const _SpotifyCardVertical({required this.track, this.onTap});
+  final VoidCallback? onLongPress;
+  const _SpotifyCardVertical({required this.track, this.onTap, this.onLongPress});
 
   @override
   Widget build(BuildContext context) {
@@ -588,6 +638,7 @@ class _SpotifyCardVertical extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(18),
       child: Container(
         width: 120,

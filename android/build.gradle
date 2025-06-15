@@ -1,3 +1,19 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.google.gms:google-services:4.4.2'
+        // KHÔNG có dòng classpath kotlin-gradle-plugin ở đây!
+    }
+}
+
+plugins {
+    id "org.jetbrains.kotlin.android" version "2.0.0" apply false
+    // Thêm các plugin khác nếu có
+}
+
 allprojects {
     repositories {
         google()

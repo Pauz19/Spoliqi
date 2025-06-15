@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+
 import 'screens/home_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/splash_screen.dart';
@@ -7,8 +10,19 @@ import 'widgets/mini_player.dart';
 import 'providers/player_provider.dart';
 import 'providers/playlist_provider.dart';
 import 'screens/playlist_screen.dart';
+import 'login_page.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: 'AIzaSyAh4yK2BVohuBnOlv3v9B3vcJ8pU6zTK5k',
+      appId: '1:853945114681:android:4aa417fa91b1c83b76ade8',
+      messagingSenderId: '853945114681',
+      projectId: 'spoliqi',
+      storageBucket: 'spoliqi.firebasestorage.app',
+    ),
+  );
   runApp(const SpotifyCloneApp());
 }
 
@@ -29,12 +43,28 @@ class SpotifyCloneApp extends StatelessWidget {
           primaryColor: Colors.greenAccent,
         ),
         debugShowCheckedModeBanner: false,
-        initialRoute: '/',
-        routes: {
-          '/': (context) => const SplashScreen(),
-          '/home': (context) => const MainWrapper(),
-        },
+        home: const RootScreen(),
       ),
+    );
+  }
+}
+
+class RootScreen extends StatelessWidget {
+  const RootScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SplashScreen();
+        }
+        if (!snapshot.hasData) {
+          return const LoginPage();
+        }
+        return const MainWrapper();
+      },
     );
   }
 }
@@ -49,15 +79,14 @@ class MainWrapper extends StatefulWidget {
 class _MainWrapperState extends State<MainWrapper> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const SearchScreen(),
-    const PlaylistScreen(),
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    SearchScreen(),
+    PlaylistScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
-    // Chỉ render MiniPlayer nếu có bài hát
     final showMiniPlayer = context.select<PlayerProvider, bool>(
           (provider) => provider.currentSong != null,
     );
@@ -67,11 +96,11 @@ class _MainWrapperState extends State<MainWrapper> {
         children: [
           _screens[_selectedIndex],
           if (showMiniPlayer)
-            Positioned(
+            const Positioned(
               left: 0,
               right: 0,
-              bottom: 0, // Đặt MiniPlayer ngay trên BottomNavigationBar
-              child: const MiniPlayer(),
+              bottom: 0,
+              child: MiniPlayer(),
             ),
         ],
       ),

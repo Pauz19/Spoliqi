@@ -188,6 +188,31 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // PHÁT BÀI BẤT KỲ TRONG QUEUE
+  Future<void> playFromQueue(int index) async {
+    if (index < 0 || index >= _queue.length) return;
+    _currentIndex = index;
+    await _loadAndPlayCurrent();
+    notifyListeners();
+  }
+
+  // KÉO THẢ ĐỔI THỨ TỰ TRONG QUEUE
+  void moveSongInQueue(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= _queue.length ||
+        newIndex < 0 || newIndex >= _queue.length) return;
+    final song = _queue.removeAt(oldIndex);
+    _queue.insert(newIndex, song);
+    // Cập nhật currentIndex nếu cần
+    if (_currentIndex == oldIndex) {
+      _currentIndex = newIndex;
+    } else if (oldIndex < _currentIndex && newIndex >= _currentIndex) {
+      _currentIndex--;
+    } else if (oldIndex > _currentIndex && newIndex <= _currentIndex) {
+      _currentIndex++;
+    }
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _audioPlayer.dispose();

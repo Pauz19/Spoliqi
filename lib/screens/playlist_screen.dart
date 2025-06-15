@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
 import '../models/song.dart';
+import '../widgets/song_options.dart'; // <-- thêm import này
 
 class PlaylistScreen extends StatelessWidget {
   const PlaylistScreen({super.key});
@@ -326,11 +327,7 @@ class _PlaylistDetailSheet extends StatelessWidget {
                       },
                       child: GestureDetector(
                         onLongPress: () {
-                          showModalBottomSheet(
-                            context: context,
-                            backgroundColor: Colors.grey[900],
-                            builder: (_) => _SongOptionsMenu(song: song, playlist: playlist),
-                          );
+                          showSongOptions(context, song); // <-- Gọi bottomsheet tuỳ chọn dùng chung
                         },
                         onDoubleTap: () {
                           // TODO: Đánh dấu yêu thích (nếu bạn có logic)

@@ -23,7 +23,7 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
     );
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
     );
   }
 
@@ -49,11 +49,11 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    // Nền gradient nhẹ
+    // Nền gradient nhẹ, bớt nổi bật để lyric dễ đọc hơn
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF212121), Color(0xFF1DB954)],
+          colors: [Color(0xFF232323), Color(0xFF171717)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -77,32 +77,32 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
             opacity: _fadeController,
             child: Column(
               children: [
-                const SizedBox(height: 28),
-                // Tên bài hát và nghệ sĩ
+                const SizedBox(height: 18),
+                // Tên bài hát và nghệ sĩ (tối giản, nhỏ gọn, font nhỏ hơn)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Column(
                     children: [
                       Text(
                         widget.title,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
                         ),
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 3),
                       Text(
                         widget.artist,
                         style: const TextStyle(
-                          color: Color(0xFFB2FFB2),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.2,
+                          color: Color(0xFF7EE687),
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.1,
                         ),
                         textAlign: TextAlign.center,
                         maxLines: 1,
@@ -111,25 +111,30 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 7),
                 // Lyric
                 Expanded(
                   child: Scrollbar(
-                    thickness: 4,
-                    radius: const Radius.circular(10),
+                    thickness: 3,
+                    radius: const Radius.circular(8),
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       child: Center(
-                        child: Text(
-                          lyric,
+                        child: SelectableText(
+                          lyric.trim(),
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
-                            height: 1.6,
+                            fontSize: 17.5,
+                            height: 1.55,
                             fontFamily: "Roboto",
                             fontWeight: FontWeight.w400,
+                            shadows: [
+                              Shadow(color: Colors.black38, blurRadius: 2, offset: Offset(0, 1)),
+                            ],
                           ),
                           textAlign: TextAlign.center,
+                          maxLines: 50,
+                          cursorColor: Color(0xFF1DB954),
                         ),
                       ),
                     ),
@@ -137,8 +142,8 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
                 ),
                 // Icon nhạc nhỏ trang trí
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 22, top: 10),
-                  child: Icon(Icons.music_note_rounded, color: Colors.white24, size: 36),
+                  padding: const EdgeInsets.only(bottom: 10, top: 7),
+                  child: Icon(Icons.music_note_rounded, color: Colors.white24, size: 28),
                 ),
               ],
             ),
@@ -152,11 +157,11 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.library_music_outlined, size: 56, color: Colors.white24),
-        const SizedBox(height: 16),
+        Icon(Icons.library_music_outlined, size: 48, color: Colors.white24),
+        const SizedBox(height: 12),
         Text(
           message,
-          style: const TextStyle(color: Colors.white54, fontSize: 17),
+          style: const TextStyle(color: Colors.white54, fontSize: 15),
           textAlign: TextAlign.center,
         ),
       ],

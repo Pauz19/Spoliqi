@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "853945114681",
+    "project_id": "spoliqi",
+    "storage_bucket": "spoliqi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:853945114681:android:4aa417fa91b1c83b76ade8",
+        "android_client_info": {
+          "package_name": "com.pauz19.spotify.spotify_clone"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "853945114681-mhfhqbbki4ihjjbjtclgek9p20hiolvf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pauz19.spotify.spotify_clone",
+            "certificate_hash": "09136f0c2c7cd3ed8366eb02551ccb11035f211e"
+          }
+        },
+        {
+          "client_id": "853945114681-ddrouo18l4h0eq69451iqdtmfm3092cc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAh4yK2BVohuBnOlv3v9B3vcJ8pU6zTK5k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "853945114681-ddrouo18l4h0eq69451iqdtmfm3092cc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

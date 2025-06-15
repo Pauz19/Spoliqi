@@ -13,7 +13,6 @@ String formatTime(Duration duration) {
 
 class MiniPlayer extends StatefulWidget {
   const MiniPlayer({super.key});
-
   @override
   State<MiniPlayer> createState() => _MiniPlayerState();
 }
@@ -48,13 +47,9 @@ class _MiniPlayerState extends State<MiniPlayer> with SingleTickerProviderStateM
     return Consumer<PlayerProvider>(
       builder: (context, provider, child) {
         final song = provider.currentSong;
-        if (song == null) {
-          return const SizedBox.shrink();
-        }
+        if (song == null) return const SizedBox.shrink();
         final Duration current = provider.position;
         final bool isPlaying = provider.isPlaying;
-
-        // Sync AnimationController state
         if (isPlaying) {
           _controller?.repeat(period: const Duration(seconds: 1));
         } else {
@@ -102,116 +97,135 @@ class _MiniPlayerState extends State<MiniPlayer> with SingleTickerProviderStateM
               );
             },
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 200),
               transitionBuilder: (child, animation) =>
                   FadeTransition(opacity: animation, child: child),
-              child: AnimatedContainer(
+              child: Container(
                 key: ValueKey(song.id),
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeInOut,
-                height: 54,
-                margin: const EdgeInsets.symmetric(horizontal: 12), // Only horizontal margin to avoid overflow
+                height: 58, // Đủ lớn để triệt tiêu hoàn toàn overflow
+                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.09),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white12, width: 0.3),
+                  color: Colors.black.withOpacity(0.96),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white10, width: 0.12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
+                      color: Colors.black.withOpacity(0.13),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const SizedBox(width: 8),
-                    ClipOval(
+                    const SizedBox(width: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
                       child: (song.coverUrl != null && song.coverUrl!.isNotEmpty)
                           ? Image.network(
                         song.coverUrl!,
-                        width: 36,
-                        height: 36,
+                        width: 32,
+                        height: 32,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
-                          width: 36,
-                          height: 36,
+                          width: 32,
+                          height: 32,
                           color: Colors.black26,
-                          child: const Icon(Icons.music_note, color: Colors.white54, size: 20),
+                          child: const Icon(Icons.music_note, color: Colors.white54, size: 16),
                         ),
                       )
                           : Container(
-                        width: 36,
-                        height: 36,
+                        width: 32,
+                        height: 32,
                         color: Colors.black26,
-                        child: const Icon(Icons.music_note, color: Colors.white54, size: 20),
+                        child: const Icon(Icons.music_note, color: Colors.white54, size: 16),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            song.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13.3,
-                              letterSpacing: 0.1,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            song.artist,
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 3),
-                          AnimatedBuilder(
-                            animation: _controller ?? AlwaysStoppedAnimation(0),
-                            builder: (context, _) {
-                              final Duration updated = provider.position;
-                              final Duration total = provider.duration;
-                              final double progress = (total.inMilliseconds > 0)
-                                  ? updated.inMilliseconds / total.inMilliseconds
-                                  : 0.0;
-                              return Stack(
-                                children: [
-                                  Container(
-                                    height: 2.8,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white12,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  FractionallySizedBox(
-                                    widthFactor: progress.clamp(0.0, 1.0),
+                      child: SizedBox(
+                        height: 46, // Phần nội dung info luôn nhỏ hơn tổng height MiniPlayer
+                        child: Stack(
+                          alignment: Alignment.bottomLeft,
+                          children: [
+                            // Progress bar sát cạnh dưới, không cộng dồn chiều cao với text
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: AnimatedBuilder(
+                                animation: _controller ?? AlwaysStoppedAnimation(0),
+                                builder: (context, _) {
+                                  final Duration updated = provider.position;
+                                  final Duration total = provider.duration;
+                                  final double progress = (total.inMilliseconds > 0)
+                                      ? updated.inMilliseconds / total.inMilliseconds
+                                      : 0.0;
+                                  return ClipRect(
                                     child: Container(
-                                      height: 2.8,
+                                      height: 2,
                                       decoration: BoxDecoration(
-                                        color: Colors.greenAccent.withOpacity(0.86),
-                                        borderRadius: BorderRadius.circular(2),
+                                        color: Colors.white12,
+                                        borderRadius: BorderRadius.circular(1),
+                                      ),
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: FractionallySizedBox(
+                                          widthFactor: progress.clamp(0.0, 1.0),
+                                          child: Container(
+                                            height: 2,
+                                            decoration: BoxDecoration(
+                                              color: Colors.greenAccent.withOpacity(0.87),
+                                              borderRadius: BorderRadius.circular(1),
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
+                                  );
+                                },
+                              ),
+                            ),
+                            // Thông tin text phía trên, ép line-height nhỏ
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top: 0,
+                              bottom: 3,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    song.title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      height: 1.0,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    song.artist,
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.0,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
-                              );
-                            },
-                          ),
-                        ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 12),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -219,25 +233,25 @@ class _MiniPlayerState extends State<MiniPlayer> with SingleTickerProviderStateM
                           icon: Icon(
                             provider.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                             color: Colors.greenAccent,
-                            size: 26,
+                            size: 20,
                           ),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () => provider.togglePlayPause(),
                           tooltip: provider.isPlaying ? 'Tạm dừng' : 'Phát',
                         ),
-                        const SizedBox(height: 2),
                         Text(
                           formatTime(current),
                           style: const TextStyle(
                             color: Colors.white38,
-                            fontSize: 10.5,
+                            fontSize: 8.5,
                             fontFeatures: [FontFeature.tabularFigures()],
+                            height: 1.0,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                   ],
                 ),
               ),

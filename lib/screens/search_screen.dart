@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../screens/player_screen.dart';
 import '../providers/player_provider.dart';
 import '../models/song.dart';
+import '../widgets/song_options.dart'; // <-- Thêm import này
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -137,6 +138,9 @@ class _SearchScreenState extends State<SearchScreen> {
                         context,
                         MaterialPageRoute(builder: (_) => const PlayerScreen()),
                       );
+                    },
+                    onLongPress: () {
+                      showSongOptions(context, song);
                     },
                   );
                 },
