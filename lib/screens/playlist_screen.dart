@@ -4,10 +4,24 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
 import '../models/song.dart';
-import '../widgets/song_options.dart'; // <-- thêm import này
+import '../widgets/song_options.dart';
 
-class PlaylistScreen extends StatelessWidget {
+class PlaylistScreen extends StatefulWidget {
   const PlaylistScreen({super.key});
+
+  @override
+  State<PlaylistScreen> createState() => _PlaylistScreenState();
+}
+
+class _PlaylistScreenState extends State<PlaylistScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Tự động load playlist từ Firebase khi vào màn hình
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PlaylistProvider>(context, listen: false).loadPlaylists();
+    });
+  }
 
   void _showCreatePlaylistDialog(BuildContext context) {
     final controller = TextEditingController();
@@ -32,11 +46,11 @@ class PlaylistScreen extends StatelessWidget {
           ),
           TextButton(
             child: const Text('Tạo', style: TextStyle(color: Colors.greenAccent)),
-            onPressed: () {
+            onPressed: () async {
               final name = controller.text.trim();
               if (name.isNotEmpty) {
-                Provider.of<PlaylistProvider>(context, listen: false).addPlaylist(name);
-                Navigator.pop(context);
+                await Provider.of<PlaylistProvider>(context, listen: false).addPlaylist(name);
+                if (context.mounted) Navigator.pop(context);
               }
             },
           ),
@@ -69,7 +83,9 @@ class PlaylistScreen extends StatelessWidget {
               ),
             ],
           ),
-          body: playlists.isEmpty
+          body: playlistProvider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : playlists.isEmpty
               ? const _EmptyPlaylistWidget()
               : ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -183,7 +199,6 @@ class PlaylistScreen extends StatelessWidget {
   }
 }
 
-/// Widget hiện khi chưa có playlist nào
 class _EmptyPlaylistWidget extends StatelessWidget {
   const _EmptyPlaylistWidget();
 
@@ -210,7 +225,6 @@ class _EmptyPlaylistWidget extends StatelessWidget {
   }
 }
 
-/// BottomSheet hiển thị chi tiết Playlist và danh sách bài hát
 class _PlaylistDetailSheet extends StatelessWidget {
   final String playlistId;
   const _PlaylistDetailSheet({required this.playlistId});
@@ -321,16 +335,13 @@ class _PlaylistDetailSheet extends StatelessWidget {
                         color: Colors.red,
                         child: const Icon(Icons.delete, color: Colors.white),
                       ),
-                      onDismissed: (_) {
-                        Provider.of<PlaylistProvider>(context, listen: false)
+                      onDismissed: (_) async {
+                        await Provider.of<PlaylistProvider>(context, listen: false)
                             .removeSongFromPlaylist(playlist.id, song);
                       },
                       child: GestureDetector(
                         onLongPress: () {
-                          showSongOptions(context, song); // <-- Gọi bottomsheet tuỳ chọn dùng chung
-                        },
-                        onDoubleTap: () {
-                          // TODO: Đánh dấu yêu thích (nếu bạn có logic)
+                          showSongOptions(context, song);
                         },
                         child: ListTile(
                           leading: ClipRRect(
@@ -367,9 +378,9 @@ class _PlaylistDetailSheet extends StatelessWidget {
                           ),
                           trailing: PopupMenuButton<String>(
                             color: Colors.grey[900],
-                            onSelected: (value) {
+                            onSelected: (value) async {
                               if (value == 'remove') {
-                                Provider.of<PlaylistProvider>(context, listen: false)
+                                await Provider.of<PlaylistProvider>(context, listen: false)
                                     .removeSongFromPlaylist(playlist.id, song);
                               }
                             },
@@ -405,7 +416,6 @@ class _PlaylistDetailSheet extends StatelessWidget {
   }
 }
 
-// Menu tuỳ chọn Playlist khi nhấn giữ
 class _PlaylistOptionsMenu extends StatelessWidget {
   final playlist;
   const _PlaylistOptionsMenu({required this.playlist});
@@ -424,41 +434,9 @@ class _PlaylistOptionsMenu extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.delete, color: Colors.red),
             title: const Text('Xoá playlist', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              Provider.of<PlaylistProvider>(context, listen: false)
+            onTap: () async {
+              await Provider.of<PlaylistProvider>(context, listen: false)
                   .removePlaylist(playlist.id);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Menu tuỳ chọn bài hát khi nhấn giữ
-class _SongOptionsMenu extends StatelessWidget {
-  final Song song;
-  final playlist;
-  const _SongOptionsMenu({required this.song, required this.playlist});
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Wrap(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.share, color: Colors.white),
-            title: const Text('Chia sẻ', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              // TODO: Xử lý chia sẻ nếu muốn
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text('Xoá khỏi playlist', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              Provider.of<PlaylistProvider>(context, listen: false)
-                  .removeSongFromPlaylist(playlist.id, song);
               Navigator.pop(context);
             },
           ),

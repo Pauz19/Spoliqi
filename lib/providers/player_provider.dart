@@ -66,6 +66,7 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Phát nhạc trực tiếp từ link audioUrl (KHÔNG dùng Firebase Storage)
   Future<void> _loadAndPlayCurrent() async {
     final song = currentSong;
     if (song != null && song.audioUrl.isNotEmpty) {
@@ -73,7 +74,8 @@ class PlayerProvider extends ChangeNotifier {
         await _audioPlayer.setUrl(song.audioUrl);
         await _audioPlayer.play();
         _isPlaying = true;
-      } catch (_) {
+      } catch (e) {
+        print('Lỗi khi phát nhạc: $e');
         _isPlaying = false;
       }
     } else {

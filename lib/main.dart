@@ -21,6 +21,7 @@ Future<void> main() async {
       messagingSenderId: '853945114681',
       projectId: 'spoliqi',
       storageBucket: 'spoliqi.firebasestorage.app',
+      databaseURL: 'https://spoliqi-default-rtdb.asia-southeast1.firebasedatabase.app', // Bắt buộc cho Realtime Database
     ),
   );
   runApp(const SpotifyCloneApp());
@@ -49,18 +50,40 @@ class SpotifyCloneApp extends StatelessWidget {
   }
 }
 
-class RootScreen extends StatelessWidget {
+class RootScreen extends StatefulWidget {
   const RootScreen({super.key});
+
+  @override
+  State<RootScreen> createState() => _RootScreenState();
+}
+
+class _RootScreenState extends State<RootScreen> {
+  User? _lastUser;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+        final user = snapshot.data;
+
+        // Chỉ clear/load playlist khi thực sự đổi trạng thái user
+        if (user != _lastUser) {
+          _lastUser = user;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
+            if (user == null) {
+              playlistProvider.clearPlaylists();
+            } else {
+              playlistProvider.loadPlaylists();
+            }
+          });
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SplashScreen();
         }
-        if (!snapshot.hasData) {
+        if (user == null) {
           return const LoginPage();
         }
         return const MainWrapper();

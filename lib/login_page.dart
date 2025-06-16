@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'register_page.dart';
+import 'main.dart'; // Để điều hướng tới MainWrapper sau đăng nhập thành công
 
 class LoginPage extends StatefulWidget {
   final String? verifyEmailMsg;
@@ -37,7 +38,6 @@ class _LoginPageState extends State<LoginPage> {
         email: emailController.text.trim(),
         password: passwordController.text,
       );
-      // Reload user để lấy trạng thái xác thực mới nhất
       await userCredential.user?.reload();
       final refreshedUser = FirebaseAuth.instance.currentUser;
       if (!(refreshedUser?.emailVerified ?? false)) {
@@ -49,8 +49,11 @@ class _LoginPageState extends State<LoginPage> {
         });
         return;
       }
-      // TODO: Chuyển sang HomePage tại đây nếu đăng nhập thành công
-      // Navigator.pushReplacement(...);
+      // Điều hướng sang MainWrapper nếu đăng nhập thành công và đã xác thực email
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainWrapper()),
+      );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -90,7 +93,11 @@ class _LoginPageState extends State<LoginPage> {
         idToken: googleAuth.idToken,
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
-      // TODO: Chuyển sang HomePage tại đây nếu đăng nhập thành công
+      // Điều hướng sang MainWrapper nếu đăng nhập Google thành công
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainWrapper()),
+      );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {

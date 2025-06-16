@@ -2,8 +2,8 @@ class Song {
   final String id;
   final String title;
   final String artist;
-  final String audioUrl;
-  final String? coverUrl; // có thể null nếu không có ảnh
+  final String audioUrl; // <-- thêm lại trường này!
+  final String? coverUrl;
 
   Song({
     required this.id,
@@ -13,12 +13,11 @@ class Song {
     this.coverUrl,
   });
 
-  // Nếu muốn parse từ JSON (ví dụ lấy từ API hoặc local file)
   factory Song.fromJson(Map<String, dynamic> json) => Song(
     id: json['id'] ?? '',
     title: json['title'] ?? '',
     artist: json['artist'] ?? '',
-    audioUrl: json['audioUrl'] ?? '',
+    audioUrl: json['audioUrl'] ?? '', // <-- lấy từ dữ liệu firebase
     coverUrl: json['coverUrl'],
   );
 
@@ -29,4 +28,8 @@ class Song {
     'audioUrl': audioUrl,
     'coverUrl': coverUrl,
   };
+
+  factory Song.fromMap(Map<String, dynamic> map) => Song.fromJson(map);
+
+  Map<String, dynamic> toMap() => toJson();
 }
