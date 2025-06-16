@@ -22,7 +22,9 @@ void showSongOptions(BuildContext context, Song song) {
               Provider.of<PlayerProvider>(context, listen: false).addToQueue(song);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Đã thêm vào danh sách chờ')));
+                  const SnackBar(
+                      content: Text('Đã thêm vào danh sách chờ'),
+                      duration: Duration(seconds: 2)));
             },
           ),
           ListTile(
@@ -66,6 +68,7 @@ void _showAddToPlaylist(BuildContext context, Song song) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Đã thêm vào "${pl.name}"'),
+                duration: Duration(seconds: 2),
                 backgroundColor: Colors.green[600],
               ),
             );

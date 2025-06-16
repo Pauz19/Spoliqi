@@ -5,8 +5,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
+import '../providers/liked_songs_provider.dart';
 import '../models/song.dart';
 import '../widgets/song_options.dart';
+import '../screens/liked_songs_screen.dart';
 
 class PlaylistScreen extends StatefulWidget {
   const PlaylistScreen({super.key});
@@ -104,6 +106,23 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     }
   }
 
+  Future<void> playAllLikedSongs(BuildContext context, List<Song> likedSongs) async {
+    final newQueue = <Song>[];
+    for (final song in likedSongs) {
+      final previewUrl = await fetchPreviewUrl(song.id);
+      if (previewUrl != null && previewUrl.isNotEmpty) {
+        newQueue.add(song.copyWith(audioUrl: previewUrl));
+      }
+    }
+    if (newQueue.isNotEmpty) {
+      Provider.of<PlayerProvider>(context, listen: false).setQueue(newQueue, startIndex: 0);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không có bài nào hỗ trợ preview 30s!')),
+      );
+    }
+  }
+
   void _showRenamePlaylistDialog(BuildContext context, dynamic playlist) {
     final controller = TextEditingController(text: playlist.name);
     showDialog(
@@ -143,9 +162,10 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<PlaylistProvider>(
-      builder: (context, playlistProvider, _) {
+    return Consumer2<PlaylistProvider, LikedSongsProvider>(
+      builder: (context, playlistProvider, likedSongsProvider, _) {
         final playlists = playlistProvider.playlists;
+        final likedSongs = likedSongsProvider.likedSongs;
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -167,14 +187,81 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
           ),
           body: playlistProvider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : playlists.isEmpty
-              ? const _EmptyPlaylistWidget()
               : ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            itemCount: playlists.length,
+            itemCount: playlists.length + 1, // +1 cho "Nhạc đã thích"
             separatorBuilder: (context, idx) => const SizedBox(height: 30),
             itemBuilder: (context, index) {
-              final playlist = playlists[index];
+              if (index == 0) {
+                // Playlist Nhạc đã thích ghim cố định đầu danh sách
+                return Material(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(22),
+                  elevation: 2,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(22),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1DB954), Color(0xFF191414)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: const Icon(Icons.favorite, color: Colors.white, size: 33),
+                          ),
+                          const SizedBox(width: 16),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Nhạc đã thích',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Toàn bộ bài hát bạn đã thích',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
+                            tooltip: "Phát tất cả",
+                            onPressed: likedSongs.isEmpty
+                                ? null
+                                : () => playAllLikedSongs(context, likedSongs),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+              // Các playlist tự tạo
+              final playlist = playlists[index - 1];
               final songCount = playlist.songs.length;
               return Material(
                 color: Colors.grey[900],

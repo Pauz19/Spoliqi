@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/player_provider.dart';
 import '../providers/playlist_provider.dart';
+import '../providers/liked_songs_provider.dart'; // Thêm provider này
+import '../models/song.dart';
 import '../widgets/lyric_tab.dart';
 import 'queue_screen.dart';
 
@@ -14,10 +16,9 @@ class PlayerScreen extends StatefulWidget {
 }
 
 class _PlayerScreenState extends State<PlayerScreen> {
-  bool isLiked = false;
   Offset? _dragStartDetails;
 
-  void _showAddToPlaylist(BuildContext context, dynamic song) {
+  void _showAddToPlaylist(BuildContext context, Song song) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black87,
@@ -45,6 +46,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 SnackBar(
                   content: Text('Đã thêm vào "${pl.name}"'),
                   backgroundColor: Colors.green[600],
+                  duration: const Duration(seconds: 2),
                 ),
               );
             },
@@ -54,7 +56,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
     );
   }
 
-  // Nhận biết vuốt từ trên xuống trên ảnh đại diện
   void _onVerticalDragStart(DragStartDetails details) {
     _dragStartDetails = details.globalPosition;
   }
@@ -82,6 +83,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
             ),
           );
         }
+
+        final likedSongsProvider = Provider.of<LikedSongsProvider>(context);
+        final isLiked = likedSongsProvider.isLiked(song);
+
         return DefaultTabController(
           length: 2,
           child: Scaffold(
@@ -143,7 +148,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       isLiked: isLiked,
                       onShuffle: provider.toggleShuffle,
                       onRepeat: provider.cycleRepeatMode,
-                      onLike: () => setState(() => isLiked = !isLiked),
+                      onLike: () async {
+                        if (isLiked) {
+                          await likedSongsProvider.unlikeSong(song);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Đã xóa khỏi Nhạc đã thích'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        } else {
+                          await likedSongsProvider.likeSong(song);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Đã thêm vào Nhạc đã thích'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
                       onNext: provider.next,
                       onPrev: provider.previous,
                       isPlaying: provider.isPlaying,
@@ -432,7 +455,6 @@ class _PlayerTab extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Spacer nhỏ cuối cùng để tránh sát đáy, không gây overflow
                     const SizedBox(height: 12),
                   ],
                 ),

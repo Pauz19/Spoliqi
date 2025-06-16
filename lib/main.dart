@@ -11,6 +11,7 @@ import 'screens/splash_screen.dart';
 import 'widgets/mini_player.dart';
 import 'providers/player_provider.dart';
 import 'providers/playlist_provider.dart';
+import 'providers/liked_songs_provider.dart'; // Thêm dòng này
 import 'screens/playlist_screen.dart';
 import 'login_page.dart';
 
@@ -26,7 +27,7 @@ void main() async {
       databaseURL: 'https://spoliqi-default-rtdb.asia-southeast1.firebasedatabase.app',
     ),
   );
-  runApp(const NetworkStatusListener(child: SpotifyCloneApp()));
+  runApp(const SpotifyCloneApp());
 }
 
 /// Widget lắng nghe trạng thái mạng và show thông báo mất/kết nối lại
@@ -47,7 +48,6 @@ class _NetworkStatusListenerState extends State<NetworkStatusListener> {
   void initState() {
     super.initState();
     _connectivity = Connectivity();
-    // Sửa dòng này cho đúng version mới:
     _stream = _connectivity.onConnectivityChanged.map((list) => list.first);
     _checkConnection();
   }
@@ -67,13 +67,15 @@ class _NetworkStatusListenerState extends State<NetworkStatusListener> {
         ? 'Mất kết nối mạng. Một số chức năng sẽ bị hạn chế.'
         : 'Đã kết nối lại Internet!';
     final color = disconnected ? Colors.red : Colors.green;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mess),
-        backgroundColor: color,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(mess),
+          backgroundColor: color,
+          duration: const Duration(seconds: 2),
+        ),
+      );
   }
 
   @override
@@ -111,6 +113,7 @@ class SpotifyCloneApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => PlayerProvider()),
         ChangeNotifierProvider(create: (_) => PlaylistProvider()),
+        ChangeNotifierProvider(create: (_) => LikedSongsProvider()), // Thêm dòng này
       ],
       child: MaterialApp(
         title: 'Spotify Clone',
@@ -120,6 +123,8 @@ class SpotifyCloneApp extends StatelessWidget {
         ),
         debugShowCheckedModeBanner: false,
         home: const RootScreen(),
+        // Bọc toàn bộ app bằng NetworkStatusListener ở builder!
+        builder: (context, child) => NetworkStatusListener(child: child!),
       ),
     );
   }
@@ -142,17 +147,20 @@ class _RootScreenState extends State<RootScreen> {
       builder: (context, snapshot) {
         final user = snapshot.data;
 
-        // Chỉ clear/load playlist và dừng nhạc khi thực sự đổi trạng thái user
+        // Chỉ clear/load playlist, liked songs và dừng nhạc khi thực sự đổi trạng thái user
         if (user != _lastUser) {
           _lastUser = user;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             final playlistProvider = Provider.of<PlaylistProvider>(context, listen: false);
+            final likedSongsProvider = Provider.of<LikedSongsProvider>(context, listen: false);
             final playerProvider = Provider.of<PlayerProvider>(context, listen: false);
             if (user == null) {
               playlistProvider.clearPlaylists();
+              likedSongsProvider.clearLikedSongs(); // <-- Thêm dòng này
               playerProvider.clear(); // Dừng và clear nhạc khi đăng xuất
             } else {
               playlistProvider.loadPlaylists();
+              likedSongsProvider.loadLikedSongs(); // <-- Thêm dòng này
               playerProvider.clear(); // Clear nhạc khi đổi tài khoản
             }
           });

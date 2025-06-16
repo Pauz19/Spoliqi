@@ -5,7 +5,7 @@ class Song {
   final String audioUrl;
   final String? coverUrl;
   final String? album;
-  final int? duration; // đơn vị: giây (hoặc bạn để String nếu muốn)
+  final int? duration; // đơn vị: giây
   final String? releaseDate;
 
   Song({
@@ -28,7 +28,9 @@ class Song {
       audioUrl: map['audioUrl'] ?? '',
       coverUrl: map['coverUrl'],
       album: map['album'],
-      duration: map['duration'] is int ? map['duration'] : int.tryParse('${map['duration'] ?? ''}'),
+      duration: map['duration'] is int
+          ? map['duration']
+          : int.tryParse('${map['duration'] ?? ''}'),
       releaseDate: map['releaseDate'],
     );
   }

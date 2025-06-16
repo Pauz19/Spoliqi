@@ -5,6 +5,7 @@ import '../models/song.dart';
 import '../services/deezer_service.dart';
 import '../providers/player_provider.dart';
 import '../screens/player_screen.dart';
+// Đã bỏ import liked_songs_screen.dart ở đây vì nút sẽ không còn ở HomeScreen
 import '../widgets/song_options.dart';
 import '../widgets/account_dialog.dart';
 import '../login_page.dart';
@@ -204,6 +205,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+            // ===== ĐÃ BỎ nút Nhạc đã thích ở đây =====
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               child: Row(

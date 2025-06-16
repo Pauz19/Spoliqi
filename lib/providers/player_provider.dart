@@ -55,6 +55,23 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Phát bài hát từ một danh sách và vị trí bất kỳ (ví dụ khi bấm từ liked_songs)
+  Future<void> playFromList(List<Song> songs, int index) async {
+    if (songs.isEmpty || index < 0 || index >= songs.length) return;
+    _queue = List<Song>.from(songs);
+    _currentIndex = index;
+    await _loadAndPlayCurrent();
+    notifyListeners();
+  }
+
+  // PHÁT BÀI BẤT KỲ TRONG QUEUE
+  Future<void> playFromQueue(int index) async {
+    if (index < 0 || index >= _queue.length) return;
+    _currentIndex = index;
+    await _loadAndPlayCurrent();
+    notifyListeners();
+  }
+
   // Xóa queue, dừng nhạc (ẩn MiniPlayer)
   Future<void> clearQueue() async {
     await _audioPlayer.stop();
@@ -200,14 +217,6 @@ class PlayerProvider extends ChangeNotifier {
     if (_currentIndex >= _queue.length) {
       _currentIndex = _queue.isEmpty ? 0 : _queue.length - 1;
     }
-    notifyListeners();
-  }
-
-  // PHÁT BÀI BẤT KỲ TRONG QUEUE
-  Future<void> playFromQueue(int index) async {
-    if (index < 0 || index >= _queue.length) return;
-    _currentIndex = index;
-    await _loadAndPlayCurrent();
     notifyListeners();
   }
 
