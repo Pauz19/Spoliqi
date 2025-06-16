@@ -146,4 +146,19 @@ class PlaylistProvider extends ChangeNotifier {
     await ref.set(playlist.songs.map((s) => s.toMap()).toList());
     notifyListeners();
   }
+
+  // ĐỔI TÊN PLAYLIST
+  Future<void> renamePlaylist(String playlistId, String newName) async {
+    if (_uid == null) return;
+    final idx = _playlists.indexWhere((pl) => pl.id == playlistId);
+    if (idx == -1) return;
+
+    // Tạo object mới với tên mới, giữ nguyên các field khác
+    _playlists[idx] = _playlists[idx].copyWith(name: newName);
+    notifyListeners();
+
+    // Cập nhật trên Realtime Database
+    final ref = FirebaseDatabase.instance.ref('playlists/$_uid/$playlistId/name');
+    await ref.set(newName);
+  }
 }

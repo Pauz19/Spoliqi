@@ -19,7 +19,6 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
   @override
   void initState() {
     super.initState();
-    // Tự động load playlist từ Firebase khi vào màn hình
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PlaylistProvider>(context, listen: false).loadPlaylists();
     });
@@ -61,7 +60,6 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     );
   }
 
-  /// Hàm lấy previewUrl từ Deezer API theo trackId
   Future<String?> fetchPreviewUrl(String trackId) async {
     try {
       final resp = await http.get(Uri.parse('https://api.deezer.com/track/$trackId'));
@@ -73,22 +71,15 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     return null;
   }
 
-  /// Mở Player với bài hát, luôn lấy previewUrl mới nhất từ Deezer API
   Future<void> playSongWithFreshPreview(Song song, List<Song> queue, int idx, BuildContext context) async {
     final previewUrl = await fetchPreviewUrl(song.id);
     if (previewUrl != null && previewUrl.isNotEmpty) {
-      final freshSong = Song(
-        id: song.id,
-        title: song.title,
-        artist: song.artist,
-        audioUrl: previewUrl,
-        coverUrl: song.coverUrl,
-      );
+      final freshSong = song.copyWith(audioUrl: previewUrl);
       final newQueue = List<Song>.from(queue);
       newQueue[idx] = freshSong;
       Provider.of<PlayerProvider>(context, listen: false)
           .setQueue(newQueue, startIndex: idx);
-      Navigator.pop(context); // đóng bottom sheet
+      if (Navigator.canPop(context)) Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Bài này không hỗ trợ preview 30s!')),
@@ -97,19 +88,11 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
   }
 
   Future<void> playAllWithFreshPreview(List<Song> songs, BuildContext context) async {
-    // Lấy previewUrl mới cho toàn bộ queue
     final newQueue = <Song>[];
     for (final song in songs) {
       final previewUrl = await fetchPreviewUrl(song.id);
-      newQueue.add(Song(
-        id: song.id,
-        title: song.title,
-        artist: song.artist,
-        audioUrl: previewUrl ?? '',
-        coverUrl: song.coverUrl,
-      ));
+      newQueue.add(song.copyWith(audioUrl: previewUrl ?? ''));
     }
-    // Bỏ các bài không có preview
     final playableQueue = newQueue.where((s) => s.audioUrl.isNotEmpty).toList();
     if (playableQueue.isNotEmpty) {
       Provider.of<PlayerProvider>(context, listen: false)
@@ -119,6 +102,43 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
         const SnackBar(content: Text('Không có bài nào hỗ trợ preview 30s!')),
       );
     }
+  }
+
+  void _showRenamePlaylistDialog(BuildContext context, dynamic playlist) {
+    final controller = TextEditingController(text: playlist.name);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Đổi tên playlist', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Nhập tên mới...',
+            hintStyle: TextStyle(color: Colors.white38),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy', style: TextStyle(color: Colors.white70)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                await Provider.of<PlaylistProvider>(context, listen: false)
+                    .renamePlaylist(playlist.id, newName);
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text('Lưu', style: TextStyle(color: Colors.greenAccent)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -185,7 +205,10 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
                       ),
-                      builder: (_) => _PlaylistOptionsMenu(playlist: playlist),
+                      builder: (_) => _PlaylistOptionsMenu(
+                        playlist: playlist,
+                        onRename: () => _showRenamePlaylistDialog(context, playlist),
+                      ),
                     );
                   },
                   child: Padding(
@@ -373,7 +396,6 @@ class _PlaylistDetailSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            // Danh sách bài hát
             if (playlist.songs.isEmpty)
               Column(
                 children: const [
@@ -388,7 +410,8 @@ class _PlaylistDetailSheet extends StatelessWidget {
                 ],
               )
             else
-              Flexible(
+              SizedBox(
+                height: 350, // hoặc MediaQuery.of(context).size.height * 0.5
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: playlist.songs.length,
@@ -439,11 +462,37 @@ class _PlaylistDetailSheet extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          subtitle: Text(
-                            song.artist,
-                            style: const TextStyle(color: Colors.white70, fontSize: 13),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                song.artist,
+                                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (song.album != null && song.album!.isNotEmpty)
+                                Text(
+                                  'Album: ${song.album}',
+                                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              if (song.duration != null)
+                                Text(
+                                  'Thời lượng: ${song.duration}',
+                                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              if (song.releaseDate != null && song.releaseDate!.isNotEmpty)
+                                Text(
+                                  'Phát hành: ${song.releaseDate}',
+                                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
                           ),
                           trailing: PopupMenuButton<String>(
                             color: Colors.grey[900],
@@ -483,8 +532,9 @@ class _PlaylistDetailSheet extends StatelessWidget {
 }
 
 class _PlaylistOptionsMenu extends StatelessWidget {
-  final playlist;
-  const _PlaylistOptionsMenu({required this.playlist});
+  final dynamic playlist;
+  final VoidCallback? onRename;
+  const _PlaylistOptionsMenu({required this.playlist, this.onRename});
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -494,7 +544,8 @@ class _PlaylistOptionsMenu extends StatelessWidget {
             leading: const Icon(Icons.edit, color: Colors.white),
             title: const Text('Đổi tên playlist', style: TextStyle(color: Colors.white)),
             onTap: () {
-              // TODO: Hiện dialog đổi tên playlist nếu muốn
+              Navigator.pop(context);
+              if (onRename != null) onRename!();
             },
           ),
           ListTile(

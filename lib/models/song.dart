@@ -2,8 +2,11 @@ class Song {
   final String id;
   final String title;
   final String artist;
-  final String audioUrl; // <-- thêm lại trường này!
+  final String audioUrl;
   final String? coverUrl;
+  final String? album;
+  final int? duration; // đơn vị: giây (hoặc bạn để String nếu muốn)
+  final String? releaseDate;
 
   Song({
     required this.id,
@@ -11,25 +14,57 @@ class Song {
     required this.artist,
     required this.audioUrl,
     this.coverUrl,
+    this.album,
+    this.duration,
+    this.releaseDate,
   });
 
-  factory Song.fromJson(Map<String, dynamic> json) => Song(
-    id: json['id'] ?? '',
-    title: json['title'] ?? '',
-    artist: json['artist'] ?? '',
-    audioUrl: json['audioUrl'] ?? '', // <-- lấy từ dữ liệu firebase
-    coverUrl: json['coverUrl'],
-  );
+  // Sử dụng khi lấy dữ liệu từ Firebase hoặc Deezer API
+  factory Song.fromMap(Map<String, dynamic> map) {
+    return Song(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      artist: map['artist'] ?? '',
+      audioUrl: map['audioUrl'] ?? '',
+      coverUrl: map['coverUrl'],
+      album: map['album'],
+      duration: map['duration'] is int ? map['duration'] : int.tryParse('${map['duration'] ?? ''}'),
+      releaseDate: map['releaseDate'],
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'artist': artist,
-    'audioUrl': audioUrl,
-    'coverUrl': coverUrl,
-  };
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'artist': artist,
+      'audioUrl': audioUrl,
+      'coverUrl': coverUrl,
+      'album': album,
+      'duration': duration,
+      'releaseDate': releaseDate,
+    };
+  }
 
-  factory Song.fromMap(Map<String, dynamic> map) => Song.fromJson(map);
-
-  Map<String, dynamic> toMap() => toJson();
+  Song copyWith({
+    String? id,
+    String? title,
+    String? artist,
+    String? audioUrl,
+    String? coverUrl,
+    String? album,
+    int? duration,
+    String? releaseDate,
+  }) {
+    return Song(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
+      audioUrl: audioUrl ?? this.audioUrl,
+      coverUrl: coverUrl ?? this.coverUrl,
+      album: album ?? this.album,
+      duration: duration ?? this.duration,
+      releaseDate: releaseDate ?? this.releaseDate,
+    );
+  }
 }

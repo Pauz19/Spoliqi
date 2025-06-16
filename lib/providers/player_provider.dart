@@ -66,6 +66,19 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Hàm clear toàn bộ trạng thái player (dùng cho sign out/đổi user)
+  Future<void> clear() async {
+    await _audioPlayer.stop();
+    _queue.clear();
+    _currentIndex = 0;
+    _isPlaying = false;
+    _position = Duration.zero;
+    _duration = const Duration(seconds: 30);
+    _isShuffling = false;
+    _repeatMode = RepeatMode.none;
+    notifyListeners();
+  }
+
   // Phát nhạc trực tiếp từ link audioUrl (KHÔNG dùng Firebase Storage)
   Future<void> _loadAndPlayCurrent() async {
     final song = currentSong;
