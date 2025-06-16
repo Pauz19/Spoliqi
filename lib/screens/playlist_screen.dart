@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
 import '../models/song.dart';
@@ -59,6 +61,66 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     );
   }
 
+  /// Hàm lấy previewUrl từ Deezer API theo trackId
+  Future<String?> fetchPreviewUrl(String trackId) async {
+    try {
+      final resp = await http.get(Uri.parse('https://api.deezer.com/track/$trackId'));
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        return data['preview'];
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Mở Player với bài hát, luôn lấy previewUrl mới nhất từ Deezer API
+  Future<void> playSongWithFreshPreview(Song song, List<Song> queue, int idx, BuildContext context) async {
+    final previewUrl = await fetchPreviewUrl(song.id);
+    if (previewUrl != null && previewUrl.isNotEmpty) {
+      final freshSong = Song(
+        id: song.id,
+        title: song.title,
+        artist: song.artist,
+        audioUrl: previewUrl,
+        coverUrl: song.coverUrl,
+      );
+      final newQueue = List<Song>.from(queue);
+      newQueue[idx] = freshSong;
+      Provider.of<PlayerProvider>(context, listen: false)
+          .setQueue(newQueue, startIndex: idx);
+      Navigator.pop(context); // đóng bottom sheet
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bài này không hỗ trợ preview 30s!')),
+      );
+    }
+  }
+
+  Future<void> playAllWithFreshPreview(List<Song> songs, BuildContext context) async {
+    // Lấy previewUrl mới cho toàn bộ queue
+    final newQueue = <Song>[];
+    for (final song in songs) {
+      final previewUrl = await fetchPreviewUrl(song.id);
+      newQueue.add(Song(
+        id: song.id,
+        title: song.title,
+        artist: song.artist,
+        audioUrl: previewUrl ?? '',
+        coverUrl: song.coverUrl,
+      ));
+    }
+    // Bỏ các bài không có preview
+    final playableQueue = newQueue.where((s) => s.audioUrl.isNotEmpty).toList();
+    if (playableQueue.isNotEmpty) {
+      Provider.of<PlayerProvider>(context, listen: false)
+          .setQueue(playableQueue, startIndex: 0);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không có bài nào hỗ trợ preview 30s!')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<PlaylistProvider>(
@@ -108,7 +170,12 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
                       ),
-                      builder: (_) => _PlaylistDetailSheet(playlistId: playlist.id),
+                      builder: (_) => _PlaylistDetailSheet(
+                        playlistId: playlist.id,
+                        fetchPreviewUrl: fetchPreviewUrl,
+                        playSongWithFreshPreview: playSongWithFreshPreview,
+                        playAllWithFreshPreview: playAllWithFreshPreview,
+                      ),
                     );
                   },
                   onLongPress: () {
@@ -181,10 +248,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                           tooltip: "Phát tất cả",
                           onPressed: playlist.songs.isEmpty
                               ? null
-                              : () {
-                            Provider.of<PlayerProvider>(context, listen: false)
-                                .setQueue(playlist.songs, startIndex: 0);
-                          },
+                              : () => playAllWithFreshPreview(playlist.songs, context),
                         ),
                       ],
                     ),
@@ -227,7 +291,16 @@ class _EmptyPlaylistWidget extends StatelessWidget {
 
 class _PlaylistDetailSheet extends StatelessWidget {
   final String playlistId;
-  const _PlaylistDetailSheet({required this.playlistId});
+  final Future<String?> Function(String) fetchPreviewUrl;
+  final Future<void> Function(Song, List<Song>, int, BuildContext) playSongWithFreshPreview;
+  final Future<void> Function(List<Song>, BuildContext) playAllWithFreshPreview;
+
+  const _PlaylistDetailSheet({
+    required this.playlistId,
+    required this.fetchPreviewUrl,
+    required this.playSongWithFreshPreview,
+    required this.playAllWithFreshPreview,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -295,11 +368,7 @@ class _PlaylistDetailSheet extends StatelessWidget {
                   tooltip: "Phát tất cả",
                   onPressed: playlist.songs.isEmpty
                       ? null
-                      : () {
-                    Provider.of<PlayerProvider>(context, listen: false)
-                        .setQueue(playlist.songs, startIndex: 0);
-                    Navigator.pop(context);
-                  },
+                      : () => playAllWithFreshPreview(playlist.songs, context),
                 ),
               ],
             ),
@@ -398,11 +467,8 @@ class _PlaylistDetailSheet extends StatelessWidget {
                             ],
                             child: const Icon(Icons.more_vert, color: Colors.white70),
                           ),
-                          onTap: () {
-                            Provider.of<PlayerProvider>(context, listen: false)
-                                .setQueue(playlist.songs, startIndex: idx);
-                            Navigator.pop(context);
-                          },
+                          onTap: () =>
+                              playSongWithFreshPreview(song, playlist.songs, idx, context),
                         ),
                       ),
                     );

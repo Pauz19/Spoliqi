@@ -9,6 +9,8 @@ import '../widgets/song_options.dart';
 import '../widgets/account_dialog.dart';
 import '../login_page.dart';
 import 'dart:math';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -94,6 +96,56 @@ class _HomeScreenState extends State<HomeScreen> {
       searchError = null;
       searchKeyword = '';
     });
+  }
+
+  /// Hàm lấy previewUrl từ Deezer API theo trackId
+  Future<String?> fetchPreviewUrl(String trackId) async {
+    try {
+      final resp = await http.get(Uri.parse('https://api.deezer.com/track/$trackId'));
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        return data['preview'];
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Mở PlayerScreen với bài hát, lấy previewUrl mới nhất bằng Deezer API
+  Future<void> playSongWithFreshPreview(Map track, BuildContext context) async {
+    final previewUrl = await fetchPreviewUrl(track['id'].toString());
+    if (previewUrl != null && previewUrl.isNotEmpty) {
+      final song = Song(
+        id: track['id'].toString(),
+        title: track['title'] ?? 'Không rõ tên',
+        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
+        audioUrl: previewUrl,
+        coverUrl: track['album']?['cover_big'] ?? '',
+      );
+      Provider.of<PlayerProvider>(context, listen: false)
+          .setQueue([song], startIndex: 0);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PlayerScreen(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bài này không hỗ trợ preview 30s!')),
+      );
+    }
+  }
+
+  Future<void> showSongOptionsWithPreview(Map track, BuildContext context) async {
+    final previewUrl = await fetchPreviewUrl(track['id'].toString());
+    final song = Song(
+      id: track['id'].toString(),
+      title: track['title'] ?? 'Không rõ tên',
+      artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
+      audioUrl: previewUrl ?? '',
+      coverUrl: track['album']?['cover_big'] ?? '',
+    );
+    showSongOptions(context, song);
   }
 
   @override
@@ -247,33 +299,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   final track = shuffledTracks[index];
                                   return _VpopSongCard(
                                     track: track,
-                                    onTap: () {
-                                      final song = Song(
-                                        id: track['id'].toString(),
-                                        title: track['title'] ?? 'Không rõ tên',
-                                        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
-                                        audioUrl: track['preview'] ?? '',
-                                        coverUrl: track['album']?['cover_big'] ?? '',
-                                      );
-                                      Provider.of<PlayerProvider>(context, listen: false)
-                                          .setQueue([song], startIndex: 0);
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const PlayerScreen(),
-                                        ),
-                                      );
-                                    },
-                                    onLongPress: () {
-                                      final song = Song(
-                                        id: track['id'].toString(),
-                                        title: track['title'] ?? 'Không rõ tên',
-                                        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
-                                        audioUrl: track['preview'] ?? '',
-                                        coverUrl: track['album']?['cover_big'] ?? '',
-                                      );
-                                      showSongOptions(context, song);
-                                    },
+                                    onTap: () => playSongWithFreshPreview(track, context),
+                                    onLongPress: () => showSongOptionsWithPreview(track, context),
                                   );
                                 },
                               ),
@@ -329,33 +356,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   final track = highlightTracks[index];
                                   return _SpotifyPlaylistTile(
                                     track: track,
-                                    onTap: () {
-                                      final song = Song(
-                                        id: track['id'].toString(),
-                                        title: track['title'] ?? 'Không rõ tên',
-                                        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
-                                        audioUrl: track['preview'] ?? '',
-                                        coverUrl: track['album']?['cover_big'] ?? '',
-                                      );
-                                      Provider.of<PlayerProvider>(context, listen: false)
-                                          .setQueue([song], startIndex: 0);
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const PlayerScreen(),
-                                        ),
-                                      );
-                                    },
-                                    onLongPress: () {
-                                      final song = Song(
-                                        id: track['id'].toString(),
-                                        title: track['title'] ?? 'Không rõ tên',
-                                        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
-                                        audioUrl: track['preview'] ?? '',
-                                        coverUrl: track['album']?['cover_big'] ?? '',
-                                      );
-                                      showSongOptions(context, song);
-                                    },
+                                    onTap: () => playSongWithFreshPreview(track, context),
+                                    onLongPress: () => showSongOptionsWithPreview(track, context),
                                   );
                                 },
                               ),
@@ -387,33 +389,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   final track = recommendedTracks[index];
                                   return _SpotifyCardVertical(
                                     track: track,
-                                    onTap: () {
-                                      final song = Song(
-                                        id: track['id'].toString(),
-                                        title: track['title'] ?? 'Không rõ tên',
-                                        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
-                                        audioUrl: track['preview'] ?? '',
-                                        coverUrl: track['album']?['cover_big'] ?? '',
-                                      );
-                                      Provider.of<PlayerProvider>(context, listen: false)
-                                          .setQueue([song], startIndex: 0);
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const PlayerScreen(),
-                                        ),
-                                      );
-                                    },
-                                    onLongPress: () {
-                                      final song = Song(
-                                        id: track['id'].toString(),
-                                        title: track['title'] ?? 'Không rõ tên',
-                                        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
-                                        audioUrl: track['preview'] ?? '',
-                                        coverUrl: track['album']?['cover_big'] ?? '',
-                                      );
-                                      showSongOptions(context, song);
-                                    },
+                                    onTap: () => playSongWithFreshPreview(track, context),
+                                    onLongPress: () => showSongOptionsWithPreview(track, context),
                                   );
                                 },
                               ),
