@@ -72,13 +72,46 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return Consumer<PlayerProvider>(
       builder: (context, provider, child) {
         final song = provider.currentSong;
+        // Cập nhật UI đẹp khi không có bài hát nào đang phát
         if (song == null) {
           return Scaffold(
             backgroundColor: Colors.black,
-            body: const Center(
-              child: Text(
-                "Chưa có bài hát nào đang phát.",
-                style: TextStyle(color: Colors.white),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.music_off, size: 80, color: Colors.white24),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Bạn đã nghe hết danh sách nhạc!',
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Hãy chọn một bài hát khác hoặc phát lại playlist.',
+                    style: TextStyle(color: Colors.white54, fontSize: 15),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.refresh, color: Colors.greenAccent),
+                    label: const Text('Phát lại từ đầu', style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black87,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      final queue = provider.queue;
+                      if (queue.isNotEmpty) {
+                        provider.setQueue(queue, startIndex: 0);
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
           );
