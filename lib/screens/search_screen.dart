@@ -136,7 +136,9 @@ class _SearchScreenState extends State<SearchScreen> {
                       Provider.of<PlayerProvider>(context, listen: false).setQueue([song], startIndex: 0);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const PlayerScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => PlayerScreen(originalSongs: [song]),
+                        ),
                       );
                     },
                     onLongPress: () {

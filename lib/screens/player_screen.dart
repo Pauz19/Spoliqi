@@ -3,13 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/player_provider.dart';
 import '../providers/playlist_provider.dart';
-import '../providers/liked_songs_provider.dart'; // Thêm provider này
+import '../providers/liked_songs_provider.dart';
 import '../models/song.dart';
 import '../widgets/lyric_tab.dart';
 import 'queue_screen.dart';
 
 class PlayerScreen extends StatefulWidget {
-  const PlayerScreen({super.key});
+  final List<Song> originalSongs;
+  const PlayerScreen({super.key, required this.originalSongs});
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -19,25 +20,28 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Offset? _dragStartDetails;
 
   void _showAddToPlaylist(BuildContext context, Song song) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black87,
+      backgroundColor: isDark ? Colors.black87 : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
       builder: (context) {
         final playlists = Provider.of<PlaylistProvider>(context, listen: false).playlists;
+        final mainTextColor = theme.textTheme.bodyLarge?.color ?? (isDark ? Colors.white : Colors.black87);
         if (playlists.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(24.0),
+          return Padding(
+            padding: const EdgeInsets.all(24.0),
             child: Text('Bạn chưa có playlist nào.',
-                style: TextStyle(color: Colors.white70, fontSize: 16)),
+                style: TextStyle(color: mainTextColor, fontSize: 16)),
           );
         }
         return ListView(
           shrinkWrap: true,
           children: playlists.map((pl) => ListTile(
-            title: Text(pl.name, style: const TextStyle(color: Colors.white)),
+            title: Text(pl.name, style: TextStyle(color: mainTextColor)),
             onTap: () {
               Provider.of<PlaylistProvider>(context, listen: false)
                   .addSongToPlaylist(pl.id, song);
@@ -69,45 +73,54 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final mainTextColor = theme.textTheme.bodyLarge?.color ?? (isDark ? Colors.white : Colors.black87);
+    final subTextColor = theme.textTheme.bodySmall?.color ?? (isDark ? Colors.white70 : Colors.black54);
+    final iconColor = theme.iconTheme.color ?? (isDark ? Colors.white : Colors.black87);
+
     return Consumer<PlayerProvider>(
       builder: (context, provider, child) {
         final song = provider.currentSong;
-        // Cập nhật UI đẹp khi không có bài hát nào đang phát
         if (song == null) {
           return Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: theme.scaffoldBackgroundColor,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.music_off, size: 80, color: Colors.white24),
+                  Icon(Icons.music_off, size: 80, color: subTextColor.withOpacity(0.3)),
                   const SizedBox(height: 18),
-                  const Text(
+                  Text(
                     'Bạn đã nghe hết danh sách nhạc!',
                     style: TextStyle(
-                        color: Colors.white70,
+                        color: subTextColor,
                         fontSize: 20,
                         fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Hãy chọn một bài hát khác hoặc phát lại playlist.',
-                    style: TextStyle(color: Colors.white54, fontSize: 15),
+                    style: TextStyle(color: subTextColor.withOpacity(0.7), fontSize: 15),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    icon: const Icon(Icons.refresh, color: Colors.greenAccent),
-                    label: const Text('Phát lại từ đầu', style: TextStyle(color: Colors.white)),
+                    icon: Icon(Icons.refresh, color: Colors.greenAccent),
+                    label: Text('Phát lại từ đầu', style: TextStyle(color: mainTextColor)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black87,
+                      backgroundColor: isDark ? Colors.black87 : Colors.grey[200],
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {
-                      final queue = provider.queue;
-                      if (queue.isNotEmpty) {
-                        provider.setQueue(queue, startIndex: 0);
+                      final original = widget.originalSongs;
+                      if (original.isNotEmpty) {
+                        Provider.of<PlayerProvider>(context, listen: false).setQueue(original, startIndex: 0);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Không tìm thấy danh sách nhạc gốc!")),
+                        );
                       }
                     },
                   ),
@@ -123,29 +136,29 @@ class _PlayerScreenState extends State<PlayerScreen> {
         return DefaultTabController(
           length: 2,
           child: Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: theme.scaffoldBackgroundColor,
             appBar: PreferredSize(
               preferredSize: const Size.fromHeight(54),
               child: AppBar(
-                backgroundColor: Colors.black.withOpacity(0.95),
+                backgroundColor: theme.scaffoldBackgroundColor.withOpacity(0.95),
                 elevation: 0,
                 toolbarHeight: 34,
                 centerTitle: true,
                 leading: IconButton(
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
+                  icon: Icon(Icons.keyboard_arrow_down_rounded, size: 28, color: iconColor),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   splashRadius: 18,
                 ),
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.playlist_add, color: Colors.white, size: 20),
+                    icon: Icon(Icons.playlist_add, color: iconColor, size: 20),
                     tooltip: "Thêm vào playlist",
                     onPressed: () => _showAddToPlaylist(context, song),
                     splashRadius: 18,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+                    icon: Icon(Icons.more_vert, color: iconColor, size: 20),
                     onPressed: () {},
                     splashRadius: 18,
                   ),
@@ -155,13 +168,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   child: Container(
                     height: 28,
                     alignment: Alignment.center,
-                    child: const TabBar(
-                      indicatorColor: Color(0xFF1DB954),
-                      labelColor: Color(0xFF1DB954),
-                      unselectedLabelColor: Colors.white70,
+                    child: TabBar(
+                      indicatorColor: Colors.greenAccent,
+                      labelColor: Colors.greenAccent,
+                      unselectedLabelColor: subTextColor,
                       tabs: [
-                        Tab(icon: Icon(Icons.music_note, size: 18)),
-                        Tab(icon: Icon(Icons.library_music, size: 18)),
+                        Tab(icon: Icon(Icons.music_note, size: 18, color: iconColor)),
+                        Tab(icon: Icon(Icons.library_music, size: 18, color: iconColor)),
                       ],
                     ),
                   ),
@@ -208,6 +221,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       duration: provider.duration,
                       onCoverVerticalDragStart: _onVerticalDragStart,
                       onCoverVerticalDragUpdate: _onVerticalDragUpdate,
+                      mainTextColor: mainTextColor,
+                      subTextColor: subTextColor,
+                      iconColor: iconColor,
                     ),
                     LyricTab(
                       artist: song.artist,
@@ -215,12 +231,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     ),
                   ],
                 ),
-                // Nút queue kiểu floating ở góc dưới bên phải
                 Positioned(
                   right: 26,
                   bottom: 34,
                   child: FloatingActionButton(
-                    backgroundColor: Colors.black.withOpacity(0.88),
+                    backgroundColor: isDark ? Colors.black.withOpacity(0.88) : Colors.white.withOpacity(0.93),
                     elevation: 2,
                     tooltip: "Xem danh sách chờ",
                     onPressed: () {
@@ -229,7 +244,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         MaterialPageRoute(builder: (_) => const QueueScreen()),
                       );
                     },
-                    child: const Icon(Icons.queue_music_rounded, color: Color(0xFF1DB954), size: 28),
+                    child: Icon(Icons.queue_music_rounded, color: Colors.greenAccent, size: 28),
                   ),
                 ),
               ],
@@ -259,6 +274,9 @@ class _PlayerTab extends StatelessWidget {
   final Duration duration;
   final GestureDragStartCallback? onCoverVerticalDragStart;
   final GestureDragUpdateCallback? onCoverVerticalDragUpdate;
+  final Color mainTextColor;
+  final Color subTextColor;
+  final Color iconColor;
 
   const _PlayerTab({
     required this.songTitle,
@@ -278,6 +296,9 @@ class _PlayerTab extends StatelessWidget {
     required this.duration,
     this.onCoverVerticalDragStart,
     this.onCoverVerticalDragUpdate,
+    required this.mainTextColor,
+    required this.subTextColor,
+    required this.iconColor,
   });
 
   @override
@@ -322,7 +343,7 @@ class _PlayerTab extends StatelessWidget {
                               color: Colors.black26,
                               width: coverSize,
                               height: coverSize,
-                              child: const Icon(Icons.music_note, size: 88, color: Colors.white38),
+                              child: Icon(Icons.music_note, size: 88, color: subTextColor.withOpacity(0.5)),
                             ),
                           ),
                         ),
@@ -335,8 +356,8 @@ class _PlayerTab extends StatelessWidget {
                         children: [
                           Text(
                             songTitle,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: mainTextColor,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.02,
@@ -348,8 +369,8 @@ class _PlayerTab extends StatelessWidget {
                           const SizedBox(height: 5),
                           Text(
                             artistName,
-                            style: const TextStyle(
-                              color: Color(0xFF1DB954),
+                            style: TextStyle(
+                              color: Colors.greenAccent,
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
                               letterSpacing: 0.5,
@@ -362,7 +383,6 @@ class _PlayerTab extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 13),
-                    // Slider tiến trình
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
@@ -374,7 +394,7 @@ class _PlayerTab extends StatelessWidget {
                               overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
                               activeTrackColor: Colors.greenAccent,
                               thumbColor: Colors.greenAccent,
-                              inactiveTrackColor: Colors.white24,
+                              inactiveTrackColor: subTextColor.withOpacity(0.25),
                             ),
                             child: Slider(
                               min: 0,
@@ -391,11 +411,11 @@ class _PlayerTab extends StatelessWidget {
                             children: [
                               Text(
                                 _formatDuration(position),
-                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                style: TextStyle(color: subTextColor, fontSize: 12),
                               ),
                               Text(
                                 _formatDuration(safeDuration),
-                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                style: TextStyle(color: subTextColor, fontSize: 12),
                               ),
                             ],
                           ),
@@ -403,21 +423,20 @@ class _PlayerTab extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    // Nút điều khiển nhạc chính
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         IconButton(
                           icon: Icon(
                             Icons.shuffle,
-                            color: isShuffling ? const Color(0xFF1DB954) : Colors.white38,
+                            color: isShuffling ? Colors.greenAccent : subTextColor,
                             size: 23,
                           ),
                           tooltip: isShuffling ? "Tắt phát ngẫu nhiên" : "Phát ngẫu nhiên",
                           onPressed: onShuffle,
                         ),
                         IconButton(
-                          icon: const Icon(Icons.skip_previous, color: Colors.white, size: 30),
+                          icon: Icon(Icons.skip_previous, color: iconColor, size: 30),
                           tooltip: "Bài trước",
                           onPressed: onPrev,
                         ),
@@ -433,7 +452,7 @@ class _PlayerTab extends StatelessWidget {
                         ),
                         const SizedBox(width: 2),
                         IconButton(
-                          icon: const Icon(Icons.skip_next, color: Colors.white, size: 30),
+                          icon: Icon(Icons.skip_next, color: iconColor, size: 30),
                           tooltip: "Bài tiếp theo",
                           onPressed: onNext,
                         ),
@@ -443,8 +462,8 @@ class _PlayerTab extends StatelessWidget {
                                 ? Icons.repeat_one
                                 : Icons.repeat,
                             color: repeatMode == RepeatMode.none
-                                ? Colors.white38
-                                : const Color(0xFF1DB954),
+                                ? subTextColor
+                                : Colors.greenAccent,
                             size: 23,
                           ),
                           tooltip: repeatMode == RepeatMode.none
@@ -456,7 +475,6 @@ class _PlayerTab extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // Nút phụ: like, tải, share
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0, bottom: 0),
                       child: Row(
@@ -465,7 +483,7 @@ class _PlayerTab extends StatelessWidget {
                           IconButton(
                             icon: Icon(
                               isLiked ? Icons.favorite : Icons.favorite_border,
-                              color: isLiked ? const Color(0xFF1DB954) : Colors.white.withOpacity(0.8),
+                              color: isLiked ? Colors.greenAccent : subTextColor,
                               size: 22,
                             ),
                             tooltip: isLiked ? "Bỏ thích" : "Thích",
@@ -474,14 +492,14 @@ class _PlayerTab extends StatelessWidget {
                           const SizedBox(width: 8),
                           IconButton(
                             icon: Icon(Icons.download_for_offline_outlined,
-                                color: Colors.white.withOpacity(0.8), size: 22),
+                                color: subTextColor, size: 22),
                             tooltip: "Tải về",
                             onPressed: () {},
                           ),
                           const SizedBox(width: 8),
                           IconButton(
                             icon: Icon(Icons.share_outlined,
-                                color: Colors.white.withOpacity(0.8), size: 22),
+                                color: subTextColor, size: 22),
                             tooltip: "Chia sẻ",
                             onPressed: () {},
                           ),

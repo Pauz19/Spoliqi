@@ -34,7 +34,9 @@ class LikedSongsScreen extends StatelessWidget {
           .setQueue(newQueue, startIndex: idx);
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const PlayerScreen()),
+        MaterialPageRoute(
+          builder: (_) => PlayerScreen(originalSongs: newQueue),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,7 +59,9 @@ class LikedSongsScreen extends StatelessWidget {
           .setQueue(newQueue, startIndex: 0);
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const PlayerScreen()),
+        MaterialPageRoute(
+          builder: (_) => PlayerScreen(originalSongs: newQueue),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -71,12 +75,48 @@ class LikedSongsScreen extends StatelessWidget {
     final likedSongs = context.watch<LikedSongsProvider>().likedSongs;
 
     if (likedSongs.isEmpty) {
-      return const Scaffold(
+      // Giao diện tối ưu: icon, text lớn, màu sắc nổi bật, mô tả phụ
+      return Scaffold(
         backgroundColor: Colors.black,
+        appBar: AppBar(
+          title: const Text('Nhạc đã thích'),
+          backgroundColor: Colors.black,
+          elevation: 0,
+        ),
         body: Center(
-          child: Text(
-            'Chưa có bài hát nào đã thích',
-            style: TextStyle(color: Colors.white70),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.favorite_border, size: 80, color: Colors.white24),
+              const SizedBox(height: 22),
+              const Text(
+                'Chưa có bài hát nào đã thích',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Hãy nhấn vào biểu tượng ',
+                style: TextStyle(color: Colors.white38, fontSize: 15),
+                textAlign: TextAlign.center,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.favorite, color: Color(0xFF1DB954), size: 18),
+                  SizedBox(width: 4),
+                  Text(
+                    'ở mỗi bài hát để thêm vào đây.',
+                    style: TextStyle(color: Colors.white38, fontSize: 15),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       );

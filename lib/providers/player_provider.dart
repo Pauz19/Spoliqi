@@ -7,6 +7,7 @@ enum RepeatMode { none, one, all }
 
 class PlayerProvider extends ChangeNotifier {
   final AudioPlayer _audioPlayer = AudioPlayer();
+
   List<Song> _queue = [];
   int _currentIndex = 0;
   bool _isShuffling = false;
@@ -14,6 +15,8 @@ class PlayerProvider extends ChangeNotifier {
   bool _isPlaying = false;
   Duration _position = Duration.zero;
   Duration _duration = const Duration(seconds: 30);
+
+  String? _lastPlayedSongId;
 
   PlayerProvider() {
     _audioPlayer.positionStream.listen((pos) {
@@ -38,7 +41,10 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   // Getter cho MiniPlayer, PlayerScreen
-  Song? get currentSong => _queue.isNotEmpty ? _queue[_currentIndex] : null;
+  Song? get currentSong =>
+      (_queue.isNotEmpty && _currentIndex >= 0 && _currentIndex < _queue.length)
+          ? _queue[_currentIndex]
+          : null;
   bool get isShuffling => _isShuffling;
   RepeatMode get repeatMode => _repeatMode;
   bool get isPlaying => _isPlaying;
@@ -46,33 +52,40 @@ class PlayerProvider extends ChangeNotifier {
   Duration get duration => _duration;
   List<Song> get queue => List.unmodifiable(_queue);
   int get currentIndex => _currentIndex;
+  String? get lastPlayedSongId => _lastPlayedSongId;
 
   // Set một queue mới (và phát bài tương ứng)
   Future<void> setQueue(List<Song> songs, {int startIndex = 0}) async {
     _queue = List<Song>.from(songs);
     _currentIndex = startIndex.clamp(0, _queue.length - 1);
     await _loadAndPlayCurrent();
+    if (_queue.isNotEmpty) {
+      _lastPlayedSongId = _queue[_currentIndex].id;
+    }
     notifyListeners();
   }
 
-  // Phát bài hát từ một danh sách và vị trí bất kỳ (ví dụ khi bấm từ liked_songs)
   Future<void> playFromList(List<Song> songs, int index) async {
     if (songs.isEmpty || index < 0 || index >= songs.length) return;
     _queue = List<Song>.from(songs);
     _currentIndex = index;
     await _loadAndPlayCurrent();
+    if (_queue.isNotEmpty) {
+      _lastPlayedSongId = _queue[_currentIndex].id;
+    }
     notifyListeners();
   }
 
-  // PHÁT BÀI BẤT KỲ TRONG QUEUE
   Future<void> playFromQueue(int index) async {
     if (index < 0 || index >= _queue.length) return;
     _currentIndex = index;
     await _loadAndPlayCurrent();
+    if (_queue.isNotEmpty) {
+      _lastPlayedSongId = _queue[_currentIndex].id;
+    }
     notifyListeners();
   }
 
-  // Xóa queue, dừng nhạc (ẩn MiniPlayer)
   Future<void> clearQueue() async {
     await _audioPlayer.stop();
     _queue.clear();
@@ -83,7 +96,6 @@ class PlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Hàm clear toàn bộ trạng thái player (dùng cho sign out/đổi user)
   Future<void> clear() async {
     await _audioPlayer.stop();
     _queue.clear();
@@ -93,10 +105,10 @@ class PlayerProvider extends ChangeNotifier {
     _duration = const Duration(seconds: 30);
     _isShuffling = false;
     _repeatMode = RepeatMode.none;
+    _lastPlayedSongId = null;
     notifyListeners();
   }
 
-  // Phát nhạc trực tiếp từ link audioUrl (KHÔNG dùng Firebase Storage)
   Future<void> _loadAndPlayCurrent() async {
     final song = currentSong;
     if (song != null && song.audioUrl.isNotEmpty) {
@@ -104,6 +116,7 @@ class PlayerProvider extends ChangeNotifier {
         await _audioPlayer.setUrl(song.audioUrl);
         await _audioPlayer.play();
         _isPlaying = true;
+        _lastPlayedSongId = song.id;
       } catch (e) {
         print('Lỗi khi phát nhạc: $e');
         _isPlaying = false;
@@ -145,11 +158,16 @@ class PlayerProvider extends ChangeNotifier {
       if (_repeatMode == RepeatMode.all) {
         _currentIndex = 0;
       } else {
+        // Khi đã ở cuối và không lặp lại, clear queue để currentSong == null
         await clearQueue();
+        notifyListeners();
         return;
       }
     }
     await _loadAndPlayCurrent();
+    if (_queue.isNotEmpty) {
+      _lastPlayedSongId = _queue[_currentIndex].id;
+    }
     notifyListeners();
   }
 
@@ -170,6 +188,9 @@ class PlayerProvider extends ChangeNotifier {
       }
     }
     await _loadAndPlayCurrent();
+    if (_queue.isNotEmpty) {
+      _lastPlayedSongId = _queue[_currentIndex].id;
+    }
     notifyListeners();
   }
 
@@ -203,30 +224,25 @@ class PlayerProvider extends ChangeNotifier {
     return newIndex;
   }
 
-  // Add a song to the current queue (if not duplicate)
   Future<void> addToQueue(Song song) async {
     if (_queue.any((s) => s.id == song.id)) return;
     _queue.add(song);
     notifyListeners();
   }
 
-  // Remove a song from the current queue
   Future<void> removeFromQueue(Song song) async {
     _queue.removeWhere((s) => s.id == song.id);
-    // Adjust currentIndex if needed
     if (_currentIndex >= _queue.length) {
       _currentIndex = _queue.isEmpty ? 0 : _queue.length - 1;
     }
     notifyListeners();
   }
 
-  // KÉO THẢ ĐỔI THỨ TỰ TRONG QUEUE
   void moveSongInQueue(int oldIndex, int newIndex) {
     if (oldIndex < 0 || oldIndex >= _queue.length ||
         newIndex < 0 || newIndex >= _queue.length) return;
     final song = _queue.removeAt(oldIndex);
     _queue.insert(newIndex, song);
-    // Cập nhật currentIndex nếu cần
     if (_currentIndex == oldIndex) {
       _currentIndex = newIndex;
     } else if (oldIndex < _currentIndex && newIndex >= _currentIndex) {
@@ -236,6 +252,8 @@ class PlayerProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  // ĐÃ LOẠI BỎ HOÀN TOÀN TÍNH NĂNG PHÁT BÀI HÁT TƯƠNG TỰ (RADIO/SIMILAR SONGS).
 
   @override
   void dispose() {

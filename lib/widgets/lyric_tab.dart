@@ -49,27 +49,40 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    // Nền gradient nhẹ, bớt nổi bật để lyric dễ đọc hơn
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundGradient = isDark
+        ? const LinearGradient(
+      colors: [Color(0xFF232323), Color(0xFF171717)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    )
+        : const LinearGradient(
+      colors: [Color(0xFFF6F6F6), Color(0xFFEDEDED)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+
+    final mainTextColor = theme.textTheme.bodyLarge?.color ?? (isDark ? Colors.white : Colors.black87);
+    final subTextColor = theme.textTheme.bodySmall?.color ?? (isDark ? Colors.white70 : Colors.black54);
+    final accentColor = Colors.greenAccent;
+
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF232323), Color(0xFF171717)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+      decoration: BoxDecoration(
+        gradient: backgroundGradient,
       ),
       child: FutureBuilder<String?>(
         future: _futureLyric,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF1DB954)));
+            return Center(child: CircularProgressIndicator(color: accentColor));
           }
           if (snapshot.hasError) {
-            return _buildError("Có lỗi khi tải lyric.\nVui lòng thử lại sau.");
+            return _buildError("Có lỗi khi tải lyric.\nVui lòng thử lại sau.", subTextColor);
           }
           final lyric = snapshot.data;
           if (lyric == null || lyric.trim().isEmpty) {
-            return _buildError("Không tìm thấy lyric cho bài hát này.");
+            return _buildError("Không tìm thấy lyric cho bài hát này.", subTextColor);
           }
           _fadeController.forward();
 
@@ -85,8 +98,8 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
                     children: [
                       Text(
                         widget.title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: mainTextColor,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.3,
@@ -98,8 +111,8 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
                       const SizedBox(height: 3),
                       Text(
                         widget.artist,
-                        style: const TextStyle(
-                          color: Color(0xFF7EE687),
+                        style: TextStyle(
+                          color: accentColor,
                           fontSize: 13.5,
                           fontWeight: FontWeight.w400,
                           letterSpacing: 0.1,
@@ -122,19 +135,22 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
                       child: Center(
                         child: SelectableText(
                           lyric.trim(),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: mainTextColor,
                             fontSize: 17.5,
                             height: 1.55,
                             fontFamily: "Roboto",
                             fontWeight: FontWeight.w400,
                             shadows: [
-                              Shadow(color: Colors.black38, blurRadius: 2, offset: Offset(0, 1)),
+                              if (isDark)
+                                const Shadow(color: Colors.black38, blurRadius: 2, offset: Offset(0, 1))
+                              else
+                                const Shadow(color: Colors.white54, blurRadius: 1, offset: Offset(0, 1)),
                             ],
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 50,
-                          cursorColor: Color(0xFF1DB954),
+                          cursorColor: accentColor,
                         ),
                       ),
                     ),
@@ -143,7 +159,7 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
                 // Icon nhạc nhỏ trang trí
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10, top: 7),
-                  child: Icon(Icons.music_note_rounded, color: Colors.white24, size: 28),
+                  child: Icon(Icons.music_note_rounded, color: subTextColor.withOpacity(0.16), size: 28),
                 ),
               ],
             ),
@@ -153,15 +169,15 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildError(String message) => Center(
+  Widget _buildError(String message, Color subTextColor) => Center(
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.library_music_outlined, size: 48, color: Colors.white24),
+        Icon(Icons.library_music_outlined, size: 48, color: subTextColor.withOpacity(0.3)),
         const SizedBox(height: 12),
         Text(
           message,
-          style: const TextStyle(color: Colors.white54, fontSize: 15),
+          style: TextStyle(color: subTextColor, fontSize: 15),
           textAlign: TextAlign.center,
         ),
       ],

@@ -26,6 +26,44 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  String mapAuthErrorToVietnamese(String? errorMessage) {
+    if (errorMessage == null) return 'Lỗi không xác định. Vui lòng thử lại!';
+    errorMessage = errorMessage.toLowerCase();
+    if (errorMessage.contains('badly formatted')) {
+      return 'Email không hợp lệ. Vui lòng kiểm tra lại địa chỉ email.';
+    }
+    if (errorMessage.contains('no user record')) {
+      return 'Không tìm thấy tài khoản với email này.';
+    }
+    if (errorMessage.contains('password is invalid') ||
+        errorMessage.contains('invalid password')) {
+      return 'Sai mật khẩu. Vui lòng thử lại.';
+    }
+    if (errorMessage.contains('user not found')) {
+      return 'Tài khoản không tồn tại.';
+    }
+    if (errorMessage.contains('the supplied auth credential is incorrect') ||
+        errorMessage.contains('malformed or has expired')) {
+      return 'Đăng nhập không thành công. Vui lòng kiểm tra lại email/mật khẩu hoặc thử đăng nhập lại.';
+    }
+    if (errorMessage.contains('too many unsuccessful login attempts')) {
+      return 'Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.';
+    }
+    if (errorMessage.contains('user disabled')) {
+      return 'Tài khoản đã bị khóa.';
+    }
+    if (errorMessage.contains('network error')) {
+      return 'Lỗi mạng. Vui lòng kiểm tra kết nối Internet.';
+    }
+    if (errorMessage.contains('blocked all requests from this device')) {
+      return 'Thiết bị này đã bị chặn. Vui lòng thử lại sau.';
+    }
+    if (errorMessage.contains('email already in use')) {
+      return 'Email này đã được sử dụng.';
+    }
+    return errorMessage; // fallback
+  }
+
   Future<void> _login() async {
     setState(() {
       isLoading = true;
@@ -49,14 +87,10 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
       // KHÔNG điều hướng sang MainWrapper ở đây, chỉ cần dừng lại, RootScreen sẽ tự động chuyển đổi!
-      // if (!mounted) return;
-      // Navigator.of(context).pushReplacement(
-      //   MaterialPageRoute(builder: (_) => const MainWrapper()),
-      // );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {
-        errorText = e.message;
+        errorText = mapAuthErrorToVietnamese(e.message);
       });
     } catch (e) {
       if (!mounted) return;
@@ -93,14 +127,10 @@ class _LoginPageState extends State<LoginPage> {
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
       // KHÔNG điều hướng sang MainWrapper ở đây, chỉ cần dừng lại, RootScreen sẽ tự động chuyển đổi!
-      // if (!mounted) return;
-      // Navigator.of(context).pushReplacement(
-      //   MaterialPageRoute(builder: (_) => const MainWrapper()),
-      // );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {
-        errorText = e.message;
+        errorText = mapAuthErrorToVietnamese(e.message);
       });
     } catch (e) {
       if (!mounted) return;
@@ -141,6 +171,13 @@ class _LoginPageState extends State<LoginPage> {
   void _goToRegister() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const RegisterPage()),
+    );
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => const ForgotPasswordDialog(),
     );
   }
 
@@ -196,6 +233,17 @@ class _LoginPageState extends State<LoginPage> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              // Nút Quên mật khẩu
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: isLoading ? null : _showForgotPasswordDialog,
+                  child: const Text(
+                    'Quên mật khẩu?',
+                    style: TextStyle(color: Color(0xFF1DB954)),
                   ),
                 ),
               ),
@@ -262,6 +310,124 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// Dialog đặt lại mật khẩu
+class ForgotPasswordDialog extends StatefulWidget {
+  const ForgotPasswordDialog({super.key});
+
+  @override
+  State<ForgotPasswordDialog> createState() => _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
+  final TextEditingController _emailController = TextEditingController();
+  bool _isLoading = false;
+  String? _error;
+  String? _success;
+
+  String mapAuthErrorToVietnamese(String? errorMessage) {
+    if (errorMessage == null) return "Có lỗi xảy ra!";
+    errorMessage = errorMessage.toLowerCase();
+    if (errorMessage.contains('badly formatted')) {
+      return 'Email không hợp lệ. Vui lòng kiểm tra lại địa chỉ email.';
+    }
+    if (errorMessage.contains('user not found')) {
+      return 'Không tìm thấy tài khoản với email này.';
+    }
+    if (errorMessage.contains('network error')) {
+      return 'Lỗi mạng. Vui lòng kiểm tra kết nối Internet.';
+    }
+    return errorMessage;
+  }
+
+  Future<void> _sendResetEmail() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _success = null;
+    });
+    try {
+      await FirebaseAuth.instance
+          .sendPasswordResetEmail(email: _emailController.text.trim());
+      setState(() {
+        _success = "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư.";
+      });
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _error = mapAuthErrorToVietnamese(e.message);
+      });
+    } catch (e) {
+      setState(() {
+        _error = "Có lỗi xảy ra!";
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Đặt lại mật khẩu'),
+      content: SizedBox(
+        width: 350,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Nhập email bạn đã đăng ký để nhận hướng dẫn đặt lại mật khẩu.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            if (_success != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  _success!,
+                  style: const TextStyle(color: Colors.green),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('Đóng'),
+        ),
+        TextButton(
+          onPressed: _isLoading ? null : _sendResetEmail,
+          child: _isLoading
+              ? const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+              : const Text('Gửi email'),
+        ),
+      ],
     );
   }
 }

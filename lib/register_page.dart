@@ -15,11 +15,49 @@ class _RegisterPageState extends State<RegisterPage> {
   bool isLoading = false;
   String? errorText;
 
+  // Kiểm tra mật khẩu mạnh (ít nhất 8 ký tự, có hoa, thường, số)
+  bool isPasswordStrong(String password) {
+    final regex = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$');
+    return regex.hasMatch(password);
+  }
+
+  String mapRegisterAuthErrorToVietnamese(FirebaseAuthException e) {
+    final code = e.code.toLowerCase();
+    if (code == 'email-already-in-use') {
+      return 'Email này đã được sử dụng cho tài khoản khác.';
+    }
+    if (code == 'invalid-email') {
+      return 'Email không hợp lệ. Vui lòng kiểm tra lại địa chỉ email.';
+    }
+    if (code == 'weak-password') {
+      return 'Mật khẩu chưa đủ mạnh. Hãy dùng tối thiểu 8 ký tự gồm chữ hoa, chữ thường và số.';
+    }
+    if (code == 'network-request-failed') {
+      return 'Lỗi mạng. Vui lòng kiểm tra kết nối Internet.';
+    }
+    if (code == 'operation-not-allowed') {
+      return 'Tài khoản email/password đang bị khóa. Liên hệ admin.';
+    }
+    if (code == 'too-many-requests') {
+      return 'Bạn đã thao tác quá nhiều lần. Vui lòng thử lại sau.';
+    }
+    // Dự phòng cho trường hợp lỗi trả về dạng message
+    final msg = (e.message ?? '').toLowerCase();
+    if (msg.contains('email address already in use')) {
+      return 'Email này đã được sử dụng cho tài khoản khác.';
+    }
+    if (msg.contains('badly formatted')) {
+      return 'Email không hợp lệ. Vui lòng kiểm tra lại địa chỉ email.';
+    }
+    return e.message ?? 'Lỗi không xác định. Vui lòng thử lại!';
+  }
+
   Future<void> _register() async {
     setState(() {
       isLoading = true;
       errorText = null;
     });
+
     if (passwordController.text != confirmPasswordController.text) {
       setState(() {
         errorText = "Mật khẩu xác nhận không khớp!";
@@ -27,6 +65,15 @@ class _RegisterPageState extends State<RegisterPage> {
       });
       return;
     }
+
+    if (!isPasswordStrong(passwordController.text)) {
+      setState(() {
+        errorText = "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số.";
+        isLoading = false;
+      });
+      return;
+    }
+
     try {
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
@@ -36,6 +83,7 @@ class _RegisterPageState extends State<RegisterPage> {
       await userCredential.user?.sendEmailVerification();
       // Đăng xuất user ngay sau khi đăng ký (bắt buộc xác thực trước khi đăng nhập)
       await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
       // Hiện thông báo xác thực email
       showDialog(
         context: context,
@@ -55,7 +103,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
     } on FirebaseAuthException catch (e) {
       setState(() {
-        errorText = e.message;
+        errorText = mapRegisterAuthErrorToVietnamese(e);
       });
     } catch (e) {
       setState(() {
@@ -180,6 +228,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: const Text('Đã có tài khoản? Đăng nhập',
                     style: TextStyle(color: Colors.greenAccent)),
               ),
+              const SizedBox(height: 6),
+              if (!isLoading)
+                const Text(
+                  'Mật khẩu cần tối thiểu 8 ký tự, có chữ hoa, chữ thường và số.',
+                  style: TextStyle(color: Colors.white38, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
             ],
           ),
         ),

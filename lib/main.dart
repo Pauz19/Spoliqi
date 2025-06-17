@@ -11,7 +11,8 @@ import 'screens/splash_screen.dart';
 import 'widgets/mini_player.dart';
 import 'providers/player_provider.dart';
 import 'providers/playlist_provider.dart';
-import 'providers/liked_songs_provider.dart'; // Thêm dòng này
+import 'providers/liked_songs_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/playlist_screen.dart';
 import 'login_page.dart';
 
@@ -113,18 +114,92 @@ class SpotifyCloneApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => PlayerProvider()),
         ChangeNotifierProvider(create: (_) => PlaylistProvider()),
-        ChangeNotifierProvider(create: (_) => LikedSongsProvider()), // Thêm dòng này
+        ChangeNotifierProvider(create: (_) => LikedSongsProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'Spotify Clone',
-        theme: ThemeData.dark().copyWith(
-          scaffoldBackgroundColor: Colors.black,
-          primaryColor: Colors.greenAccent,
-        ),
-        debugShowCheckedModeBanner: false,
-        home: const RootScreen(),
-        // Bọc toàn bộ app bằng NetworkStatusListener ở builder!
-        builder: (context, child) => NetworkStatusListener(child: child!),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Spotify Clone',
+            theme: ThemeData(
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: const Color(0xFFF6F6F6), // nền xám nhạt dịu mắt
+              primaryColor: Colors.greenAccent,
+              dividerColor: Colors.grey.shade300,
+              iconTheme: const IconThemeData(color: Colors.black87), // icon tối cho theme sáng
+              colorScheme: ColorScheme.light(
+                primary: Colors.greenAccent,
+                secondary: Colors.greenAccent,
+                background: const Color(0xFFF6F6F6),
+                surface: Colors.white,
+                onPrimary: Colors.black87,
+                onSecondary: Colors.black87,
+                onSurface: Colors.black87,
+                onBackground: Colors.black87,
+                error: Colors.red,
+                onError: Colors.white,
+                brightness: Brightness.light,
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFFF6F6F6),
+                iconTheme: IconThemeData(color: Colors.black87),
+                titleTextStyle: TextStyle(
+                  color: Colors.black87,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                elevation: 0,
+              ),
+              textTheme: const TextTheme(
+                displayLarge: TextStyle(color: Colors.black87),
+                displayMedium: TextStyle(color: Colors.black87),
+                displaySmall: TextStyle(color: Colors.black87),
+                headlineLarge: TextStyle(color: Colors.black87),
+                headlineMedium: TextStyle(color: Colors.black87),
+                headlineSmall: TextStyle(color: Colors.black87),
+                titleLarge: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+                titleMedium: TextStyle(color: Colors.black87),
+                titleSmall: TextStyle(color: Colors.black87),
+                bodyLarge: TextStyle(color: Colors.black87),
+                bodyMedium: TextStyle(color: Colors.black87),
+                bodySmall: TextStyle(color: Colors.black54),
+                labelLarge: TextStyle(color: Colors.black87),
+                labelMedium: TextStyle(color: Colors.black87),
+                labelSmall: TextStyle(color: Colors.black54),
+              ),
+              listTileTheme: const ListTileThemeData(
+                iconColor: Colors.black87,
+                textColor: Colors.black87,
+              ),
+              switchTheme: SwitchThemeData(
+                thumbColor: MaterialStatePropertyAll(Colors.greenAccent),
+                trackColor: MaterialStatePropertyAll(Color(0xFFB2DFDB)),
+              ),
+            ),
+            darkTheme: ThemeData.dark().copyWith(
+              scaffoldBackgroundColor: Colors.black,
+              primaryColor: Colors.greenAccent,
+              iconTheme: const IconThemeData(color: Colors.white),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.black,
+                iconTheme: IconThemeData(color: Colors.white),
+                titleTextStyle: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              listTileTheme: const ListTileThemeData(
+                iconColor: Colors.white,
+                textColor: Colors.white,
+              ),
+            ),
+            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            debugShowCheckedModeBanner: false,
+            home: const RootScreen(),
+            builder: (context, child) => NetworkStatusListener(child: child!),
+          );
+        },
       ),
     );
   }
@@ -156,11 +231,11 @@ class _RootScreenState extends State<RootScreen> {
             final playerProvider = Provider.of<PlayerProvider>(context, listen: false);
             if (user == null) {
               playlistProvider.clearPlaylists();
-              likedSongsProvider.clearLikedSongs(); // <-- Thêm dòng này
+              likedSongsProvider.clearLikedSongs();
               playerProvider.clear(); // Dừng và clear nhạc khi đăng xuất
             } else {
               playlistProvider.loadPlaylists();
-              likedSongsProvider.loadLikedSongs(); // <-- Thêm dòng này
+              likedSongsProvider.loadLikedSongs();
               playerProvider.clear(); // Clear nhạc khi đổi tài khoản
             }
           });
@@ -200,6 +275,8 @@ class _MainWrapperState extends State<MainWrapper> {
           (provider) => provider.currentSong != null,
     );
 
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -214,9 +291,9 @@ class _MainWrapperState extends State<MainWrapper> {
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.black,
+        backgroundColor: isDark ? Colors.black : const Color(0xFFF6F6F6),
         selectedItemColor: Colors.greenAccent,
-        unselectedItemColor: Colors.white54,
+        unselectedItemColor: isDark ? Colors.white54 : Colors.black38,
         currentIndex: _selectedIndex,
         items: const [
           BottomNavigationBarItem(

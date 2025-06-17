@@ -30,35 +30,38 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text('Tạo playlist mới', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Nhập tên playlist...',
-            hintStyle: TextStyle(color: Colors.white38),
+      builder: (_) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
+          title: Text('Tạo playlist mới', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Nhập tên playlist...',
+              hintStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+            ),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
           ),
-          style: const TextStyle(color: Colors.white),
-        ),
-        actions: [
-          TextButton(
-            child: const Text('Hủy', style: TextStyle(color: Colors.white70)),
-            onPressed: () => Navigator.pop(context),
-          ),
-          TextButton(
-            child: const Text('Tạo', style: TextStyle(color: Colors.greenAccent)),
-            onPressed: () async {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                await Provider.of<PlaylistProvider>(context, listen: false).addPlaylist(name);
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              child: Text('Hủy', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
+              onPressed: () => Navigator.pop(context),
+            ),
+            TextButton(
+              child: Text('Tạo', style: TextStyle(color: Colors.greenAccent)),
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isNotEmpty) {
+                  await Provider.of<PlaylistProvider>(context, listen: false).addPlaylist(name);
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -127,59 +130,69 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     final controller = TextEditingController(text: playlist.name);
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text('Đổi tên playlist', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Nhập tên mới...',
-            hintStyle: TextStyle(color: Colors.white38),
+      builder: (_) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
+          title: Text('Đổi tên playlist', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+            decoration: InputDecoration(
+              hintText: 'Nhập tên mới...',
+              hintStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy', style: TextStyle(color: Colors.white70)),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newName = controller.text.trim();
-              if (newName.isNotEmpty) {
-                await Provider.of<PlaylistProvider>(context, listen: false)
-                    .renamePlaylist(playlist.id, newName);
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            child: const Text('Lưu', style: TextStyle(color: Colors.greenAccent)),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Hủy', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final newName = controller.text.trim();
+                if (newName.isNotEmpty) {
+                  await Provider.of<PlaylistProvider>(context, listen: false)
+                      .renamePlaylist(playlist.id, newName);
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              child: Text('Lưu', style: TextStyle(color: Colors.greenAccent)),
+            ),
+          ],
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundColor = theme.scaffoldBackgroundColor;
+    final mainTextColor = theme.textTheme.bodyLarge?.color ?? (isDark ? Colors.white : Colors.black87);
+    final subTextColor = theme.textTheme.bodySmall?.color ?? (isDark ? Colors.white70 : Colors.black54);
+    final iconColor = theme.iconTheme.color ?? (isDark ? Colors.white : Colors.black87);
+
     return Consumer2<PlaylistProvider, LikedSongsProvider>(
       builder: (context, playlistProvider, likedSongsProvider, _) {
         final playlists = playlistProvider.playlists;
         final likedSongs = likedSongsProvider.likedSongs;
 
         return Scaffold(
-          backgroundColor: Colors.black,
+          backgroundColor: backgroundColor,
           appBar: AppBar(
-            backgroundColor: Colors.black,
-            title: const Text(
+            backgroundColor: backgroundColor,
+            title: Text(
               'Playlist của bạn',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(fontWeight: FontWeight.bold, color: mainTextColor),
             ),
             elevation: 0,
             centerTitle: true,
             actions: [
               IconButton(
-                icon: const Icon(Icons.add, color: Colors.white),
+                icon: Icon(Icons.add, color: iconColor),
                 tooltip: 'Tạo playlist mới',
                 onPressed: () => _showCreatePlaylistDialog(context),
               ),
@@ -195,7 +208,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
               if (index == 0) {
                 // Playlist Nhạc đã thích ghim cố định đầu danh sách
                 return Material(
-                  color: Colors.black,
+                  color: isDark ? Colors.black : Colors.white,
                   borderRadius: BorderRadius.circular(22),
                   elevation: 2,
                   child: InkWell(
@@ -221,26 +234,26 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                                 end: Alignment.bottomRight,
                               ),
                             ),
-                            child: const Icon(Icons.favorite, color: Colors.white, size: 33),
+                            child: Icon(Icons.favorite, color: mainTextColor, size: 33),
                           ),
                           const SizedBox(width: 16),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Nhạc đã thích',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: mainTextColor,
                                     fontSize: 19,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
                                   'Toàn bộ bài hát bạn đã thích',
                                   style: TextStyle(
-                                    color: Colors.white70,
+                                    color: subTextColor,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -248,7 +261,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
+                            icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
                             tooltip: "Phát tất cả",
                             onPressed: likedSongs.isEmpty
                                 ? null
@@ -264,7 +277,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
               final playlist = playlists[index - 1];
               final songCount = playlist.songs.length;
               return Material(
-                color: Colors.grey[900],
+                color: isDark ? Colors.grey[900] : Colors.grey[100],
                 borderRadius: BorderRadius.circular(22),
                 elevation: 3,
                 child: InkWell(
@@ -273,7 +286,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
-                      backgroundColor: Colors.black,
+                      backgroundColor: backgroundColor,
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
                       ),
@@ -282,19 +295,25 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                         fetchPreviewUrl: fetchPreviewUrl,
                         playSongWithFreshPreview: playSongWithFreshPreview,
                         playAllWithFreshPreview: playAllWithFreshPreview,
+                        mainTextColor: mainTextColor,
+                        subTextColor: subTextColor,
+                        iconColor: iconColor,
+                        isDark: isDark,
                       ),
                     );
                   },
                   onLongPress: () {
                     showModalBottomSheet(
                       context: context,
-                      backgroundColor: Colors.grey[900],
+                      backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
                       ),
                       builder: (_) => _PlaylistOptionsMenu(
                         playlist: playlist,
                         onRename: () => _showRenamePlaylistDialog(context, playlist),
+                        iconColor: iconColor,
+                        mainTextColor: mainTextColor,
                       ),
                     );
                   },
@@ -319,14 +338,14 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                               width: 60,
                               height: 60,
                               color: Colors.black26,
-                              child: const Icon(Icons.music_note, color: Colors.white54),
+                              child: Icon(Icons.music_note, color: subTextColor),
                             ),
                           )
                               : Container(
                             width: 60,
                             height: 60,
                             color: Colors.black26,
-                            child: const Icon(Icons.queue_music, color: Colors.white54),
+                            child: Icon(Icons.queue_music, color: subTextColor),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -336,8 +355,8 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                             children: [
                               Text(
                                 playlist.name,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: mainTextColor,
                                   fontSize: 19,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -345,8 +364,8 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 '$songCount bài hát',
-                                style: const TextStyle(
-                                  color: Colors.white70,
+                                style: TextStyle(
+                                  color: subTextColor,
                                   fontSize: 13,
                                 ),
                               ),
@@ -354,7 +373,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
+                          icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
                           tooltip: "Phát tất cả",
                           onPressed: playlist.songs.isEmpty
                               ? null
@@ -373,43 +392,25 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
   }
 }
 
-class _EmptyPlaylistWidget extends StatelessWidget {
-  const _EmptyPlaylistWidget();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.queue_music_rounded, size: 66, color: Colors.white24),
-          const SizedBox(height: 18),
-          const Text(
-            'Chưa có playlist nào',
-            style: TextStyle(color: Colors.white70, fontSize: 18),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Tạo playlist mới để lưu các bài hát yêu thích!',
-            style: TextStyle(color: Colors.white38, fontSize: 15),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _PlaylistDetailSheet extends StatelessWidget {
   final String playlistId;
   final Future<String?> Function(String) fetchPreviewUrl;
   final Future<void> Function(Song, List<Song>, int, BuildContext) playSongWithFreshPreview;
   final Future<void> Function(List<Song>, BuildContext) playAllWithFreshPreview;
+  final Color mainTextColor;
+  final Color subTextColor;
+  final Color iconColor;
+  final bool isDark;
 
   const _PlaylistDetailSheet({
     required this.playlistId,
     required this.fetchPreviewUrl,
     required this.playSongWithFreshPreview,
     required this.playAllWithFreshPreview,
+    required this.mainTextColor,
+    required this.subTextColor,
+    required this.iconColor,
+    required this.isDark,
   });
 
   @override
@@ -445,14 +446,14 @@ class _PlaylistDetailSheet extends StatelessWidget {
                       width: 70,
                       height: 70,
                       color: Colors.black26,
-                      child: const Icon(Icons.music_note, color: Colors.white54),
+                      child: Icon(Icons.music_note, color: subTextColor),
                     ),
                   )
                       : Container(
                     width: 70,
                     height: 70,
                     color: Colors.black26,
-                    child: const Icon(Icons.queue_music, color: Colors.white54),
+                    child: Icon(Icons.queue_music, color: subTextColor),
                   ),
                 ),
                 const SizedBox(width: 18),
@@ -462,19 +463,19 @@ class _PlaylistDetailSheet extends StatelessWidget {
                     children: [
                       Text(
                         playlist.name,
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                        style: TextStyle(
+                            color: mainTextColor, fontWeight: FontWeight.bold, fontSize: 20),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '$songCount bài hát',
-                        style: const TextStyle(color: Colors.white70, fontSize: 14),
+                        style: TextStyle(color: subTextColor, fontSize: 14),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 38),
+                  icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 38),
                   tooltip: "Phát tất cả",
                   onPressed: playlist.songs.isEmpty
                       ? null
@@ -485,24 +486,24 @@ class _PlaylistDetailSheet extends StatelessWidget {
             const SizedBox(height: 16),
             if (playlist.songs.isEmpty)
               Column(
-                children: const [
-                  SizedBox(height: 32),
-                  Icon(Icons.music_off, size: 54, color: Colors.white24),
-                  SizedBox(height: 10),
+                children: [
+                  const SizedBox(height: 32),
+                  Icon(Icons.music_off, size: 54, color: subTextColor.withOpacity(0.3)),
+                  const SizedBox(height: 10),
                   Text(
                     'Playlist rỗng',
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                    style: TextStyle(color: subTextColor, fontSize: 16),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                 ],
               )
             else
               SizedBox(
-                height: 350, // hoặc MediaQuery.of(context).size.height * 0.5
+                height: 350,
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: playlist.songs.length,
-                  separatorBuilder: (context, idx) => const Divider(color: Colors.white12, height: 1),
+                  separatorBuilder: (context, idx) => Divider(color: subTextColor.withOpacity(0.18), height: 1),
                   itemBuilder: (context, idx) {
                     final song = playlist.songs[idx];
                     return Dismissible(
@@ -539,13 +540,13 @@ class _PlaylistDetailSheet extends StatelessWidget {
                                 width: 44,
                                 height: 44,
                                 color: Colors.black26,
-                                child: const Icon(Icons.music_note, color: Colors.white54),
+                                child: Icon(Icons.music_note, color: subTextColor),
                               ),
                             ),
                           ),
                           title: Text(
                             song.title,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                            style: TextStyle(color: mainTextColor, fontWeight: FontWeight.w500),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -554,35 +555,35 @@ class _PlaylistDetailSheet extends StatelessWidget {
                             children: [
                               Text(
                                 song.artist,
-                                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                style: TextStyle(color: subTextColor, fontSize: 13),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               if (song.album != null && song.album!.isNotEmpty)
                                 Text(
                                   'Album: ${song.album}',
-                                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                  style: TextStyle(color: subTextColor.withOpacity(0.7), fontSize: 12),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               if (song.duration != null)
                                 Text(
                                   'Thời lượng: ${song.duration}',
-                                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                  style: TextStyle(color: subTextColor.withOpacity(0.7), fontSize: 12),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               if (song.releaseDate != null && song.releaseDate!.isNotEmpty)
                                 Text(
                                   'Phát hành: ${song.releaseDate}',
-                                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                  style: TextStyle(color: subTextColor.withOpacity(0.7), fontSize: 12),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                             ],
                           ),
                           trailing: PopupMenuButton<String>(
-                            color: Colors.grey[900],
+                            color: isDark ? Colors.grey[900] : Colors.grey[200],
                             onSelected: (value) async {
                               if (value == 'remove') {
                                 await Provider.of<PlaylistProvider>(context, listen: false)
@@ -590,18 +591,18 @@ class _PlaylistDetailSheet extends StatelessWidget {
                               }
                             },
                             itemBuilder: (context) => [
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'remove',
                                 child: Row(
                                   children: [
                                     Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                                    SizedBox(width: 10),
-                                    Text('Xoá khỏi playlist'),
+                                    const SizedBox(width: 10),
+                                    Text('Xoá khỏi playlist', style: TextStyle(color: mainTextColor)),
                                   ],
                                 ),
                               ),
                             ],
-                            child: const Icon(Icons.more_vert, color: Colors.white70),
+                            child: Icon(Icons.more_vert, color: subTextColor),
                           ),
                           onTap: () =>
                               playSongWithFreshPreview(song, playlist.songs, idx, context),
@@ -621,15 +622,22 @@ class _PlaylistDetailSheet extends StatelessWidget {
 class _PlaylistOptionsMenu extends StatelessWidget {
   final dynamic playlist;
   final VoidCallback? onRename;
-  const _PlaylistOptionsMenu({required this.playlist, this.onRename});
+  final Color iconColor;
+  final Color mainTextColor;
+  const _PlaylistOptionsMenu({
+    required this.playlist,
+    this.onRename,
+    required this.iconColor,
+    required this.mainTextColor,
+  });
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Wrap(
         children: [
           ListTile(
-            leading: const Icon(Icons.edit, color: Colors.white),
-            title: const Text('Đổi tên playlist', style: TextStyle(color: Colors.white)),
+            leading: Icon(Icons.edit, color: iconColor),
+            title: Text('Đổi tên playlist', style: TextStyle(color: mainTextColor)),
             onTap: () {
               Navigator.pop(context);
               if (onRename != null) onRename!();
