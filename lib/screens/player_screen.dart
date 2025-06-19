@@ -9,6 +9,17 @@ import '../models/song.dart';
 import '../widgets/lyric_tab.dart';
 import 'queue_screen.dart';
 
+// Hàm format thủ công các biến {0}, %1$s, $args{0}
+String manualFormat(String template, List<String> args) {
+  var result = template;
+  for (var i = 0; i < args.length; i++) {
+    result = result.replaceAll('{$i}', args[i]);
+    result = result.replaceAll('%${i + 1}\$s', args[i]);
+    result = result.replaceAll('\$args{$i}', args[i]);
+  }
+  return result;
+}
+
 class PlayerScreen extends StatefulWidget {
   final List<Song> originalSongs;
   const PlayerScreen({super.key, required this.originalSongs});

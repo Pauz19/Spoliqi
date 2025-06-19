@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../providers/playlist_provider.dart';
 import '../providers/player_provider.dart';
 import '../providers/liked_songs_provider.dart';
+import '../providers/notification_provider.dart';
 import '../models/song.dart';
 import '../widgets/song_options.dart';
 import '../screens/liked_songs_screen.dart';
@@ -38,38 +39,49 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     });
   }
 
-  void _showCreatePlaylistDialog(BuildContext context) {
+  void _showCreatePlaylistDialog(BuildContext rootContext) {
     final controller = TextEditingController();
+    // Lấy Provider ngoài dialog, trước khi showDialog
+    final playlistProvider = Provider.of<PlaylistProvider>(rootContext, listen: false);
+    final notificationProvider = Provider.of<NotificationProvider>(rootContext, listen: false);
+
     showDialog(
-      context: context,
-      builder: (_) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
+      context: rootContext,
+      builder: (dialogContext) {
+        final isDark = Theme.of(rootContext).brightness == Brightness.dark;
         return AlertDialog(
           backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
-          title: Text(tr('create_playlist'), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+          title: Text(tr('create_playlist')),
           content: TextField(
             controller: controller,
-            autofocus: true,
             decoration: InputDecoration(
-              hintText: tr('playlist_name_hint'),
-              hintStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+              hintText: tr('new_playlist_name_hint'),
             ),
-            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
           ),
           actions: [
             TextButton(
-              child: Text(tr('cancel'), style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(tr('cancel')),
             ),
             TextButton(
-              child: Text(tr('create'), style: TextStyle(color: Colors.greenAccent)),
               onPressed: () async {
                 final name = controller.text.trim();
+                debugPrint('Bấm nút tạo: $name');
                 if (name.isNotEmpty) {
-                  await Provider.of<PlaylistProvider>(context, listen: false).addPlaylist(name, context: context);
-                  if (context.mounted) Navigator.pop(context);
+                  final result = await playlistProvider.addPlaylist(name);
+                  debugPrint('Kết quả tạo: $result');
+                  if (!mounted) return;
+                  if (result) {
+                    notificationProvider.addNotificationKey('created_playlist', args: [name]);
+                    Navigator.of(dialogContext).pop();
+                  } else {
+                    ScaffoldMessenger.of(rootContext).showSnackBar(
+                      SnackBar(content: Text(tr('create_playlist_failed'))),
+                    );
+                  }
                 }
               },
+              child: Text(tr('create')),
             ),
           ],
         );
@@ -138,39 +150,47 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     }
   }
 
-  void _showRenamePlaylistDialog(BuildContext context, dynamic playlist) {
+  void _showRenamePlaylistDialog(BuildContext rootContext, dynamic playlist) {
     final controller = TextEditingController(text: playlist.name);
+    // Lấy Provider ngoài dialog
+    final playlistProvider = Provider.of<PlaylistProvider>(rootContext, listen: false);
+    final notificationProvider = Provider.of<NotificationProvider>(rootContext, listen: false);
+
     showDialog(
-      context: context,
-      builder: (_) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
+      context: rootContext,
+      builder: (dialogContext) {
+        final isDark = Theme.of(rootContext).brightness == Brightness.dark;
         return AlertDialog(
           backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
-          title: Text(tr('rename_playlist'), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+          title: Text(tr('rename_playlist'), style: TextStyle(color: Theme.of(rootContext).textTheme.bodyLarge?.color)),
           content: TextField(
             controller: controller,
             autofocus: true,
-            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+            style: TextStyle(color: Theme.of(rootContext).textTheme.bodyLarge?.color),
             decoration: InputDecoration(
               hintText: tr('new_playlist_name_hint'),
-              hintStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+              hintStyle: TextStyle(color: Theme.of(rootContext).textTheme.bodySmall?.color),
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(tr('cancel'), style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(tr('cancel')),
             ),
             TextButton(
               onPressed: () async {
                 final newName = controller.text.trim();
+                final oldName = playlist.name;
                 if (newName.isNotEmpty) {
-                  await Provider.of<PlaylistProvider>(context, listen: false)
-                      .renamePlaylist(playlist.id, newName, context: context);
-                  if (context.mounted) Navigator.pop(context);
+                  await playlistProvider.renamePlaylist(playlist.id, newName, context: rootContext);
+
+                  // Thông báo khi đổi tên thành công, truyền cả tên cũ và tên mới
+                  notificationProvider.addNotificationKey('playlist_renamed', args: [oldName, newName]);
+
+                  if (rootContext.mounted) Navigator.of(dialogContext).pop();
                 }
               },
-              child: Text(tr('save'), style: TextStyle(color: Colors.greenAccent)),
+              child: Text(tr('save')),
             ),
           ],
         );
@@ -187,49 +207,175 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     final subTextColor = theme.textTheme.bodySmall?.color ?? (isDark ? Colors.white70 : Colors.black54);
     final iconColor = theme.iconTheme.color ?? (isDark ? Colors.white : Colors.black87);
 
-    return Consumer2<PlaylistProvider, LikedSongsProvider>(
-      builder: (context, playlistProvider, likedSongsProvider, _) {
-        final playlists = playlistProvider.playlists;
-        final likedSongs = likedSongsProvider.likedSongs;
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      body: Consumer2<PlaylistProvider, LikedSongsProvider>(
+        builder: (context, playlistProvider, likedSongsProvider, _) {
+          final playlists = playlistProvider.playlists;
+          final likedSongs = likedSongsProvider.likedSongs;
 
-        // *** ĐÃ BỎ AppBar ở đây, chỉ trả về body ***
-        return playlistProvider.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          itemCount: playlists.length + 1, // +1 cho "Nhạc đã thích"
-          separatorBuilder: (context, idx) => const SizedBox(height: 30),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              // Playlist Nhạc đã thích ghim cố định đầu danh sách
+          return playlistProvider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            itemCount: playlists.length + 2, // +1 cho "Nhạc đã thích", +1 cho "Tạo playlist mới"
+            separatorBuilder: (context, idx) => const SizedBox(height: 30),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                // Nút tạo playlist mới ở đầu danh sách
+                return Material(
+                  color: isDark ? Colors.grey[900] : Colors.grey[200],
+                  borderRadius: BorderRadius.circular(20),
+                  child: ListTile(
+                    leading: Icon(Icons.add, color: Colors.greenAccent, size: 33),
+                    title: Text(tr('create_playlist'),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: mainTextColor)),
+                    onTap: () => _showCreatePlaylistDialog(context),
+                  ),
+                );
+              }
+              if (index == 1) {
+                // Playlist Nhạc đã thích ghim cố định đầu danh sách
+                return Material(
+                  color: isDark ? Colors.black : Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  elevation: 2,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(22),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1DB954), Color(0xFF191414)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: Icon(Icons.favorite, color: mainTextColor, size: 33),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tr('liked_songs'),
+                                  style: TextStyle(
+                                    color: mainTextColor,
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  tr('all_liked_songs'),
+                                  style: TextStyle(
+                                    color: subTextColor,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
+                            tooltip: tr('play_all'),
+                            onPressed: likedSongs.isEmpty
+                                ? null
+                                : () => playAllLikedSongs(context, likedSongs),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+              // Các playlist tự tạo
+              final playlist = playlists[index - 2];
+              final songCount = playlist.songs.length;
               return Material(
-                color: isDark ? Colors.black : Colors.white,
+                color: isDark ? Colors.grey[900] : Colors.grey[100],
                 borderRadius: BorderRadius.circular(22),
-                elevation: 2,
+                elevation: 3,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(22),
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: backgroundColor,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+                      ),
+                      builder: (_) => _PlaylistDetailSheet(
+                        playlistId: playlist.id,
+                        fetchPreviewUrl: fetchPreviewUrl,
+                        playSongWithFreshPreview: playSongWithFreshPreview,
+                        playAllWithFreshPreview: playAllWithFreshPreview,
+                        mainTextColor: mainTextColor,
+                        subTextColor: subTextColor,
+                        iconColor: iconColor,
+                        isDark: isDark,
+                      ),
+                    );
+                  },
+                  onLongPress: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+                      ),
+                      builder: (_) => _PlaylistOptionsMenu(
+                        playlist: playlist,
+                        onRename: () => _showRenamePlaylistDialog(context, playlist),
+                        iconColor: iconColor,
+                        mainTextColor: mainTextColor,
+                      ),
                     );
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                     child: Row(
                       children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF1DB954), Color(0xFF191414)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: playlist.songs.isNotEmpty
+                              ? CachedNetworkImage(
+                            imageUrl: playlist.songs.first.coverUrl ?? '',
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              width: 60,
+                              height: 60,
+                              color: Colors.black26,
                             ),
+                            errorWidget: (context, url, error) => Container(
+                              width: 60,
+                              height: 60,
+                              color: Colors.black26,
+                              child: Icon(Icons.music_note, color: subTextColor),
+                            ),
+                          )
+                              : Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.black26,
+                            child: Icon(Icons.queue_music, color: subTextColor),
                           ),
-                          child: Icon(Icons.favorite, color: mainTextColor, size: 33),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -237,7 +383,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                tr('liked_songs'),
+                                playlist.name,
                                 style: TextStyle(
                                   color: mainTextColor,
                                   fontSize: 19,
@@ -246,7 +392,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                tr('all_liked_songs'),
+                                manualFormat(tr('song_count'), ['$songCount']),
                                 style: TextStyle(
                                   color: subTextColor,
                                   fontSize: 13,
@@ -258,130 +404,19 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                         IconButton(
                           icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
                           tooltip: tr('play_all'),
-                          onPressed: likedSongs.isEmpty
+                          onPressed: playlist.songs.isEmpty
                               ? null
-                              : () => playAllLikedSongs(context, likedSongs),
+                              : () => playAllWithFreshPreview(playlist.songs, context),
                         ),
                       ],
                     ),
                   ),
                 ),
               );
-            }
-            // Các playlist tự tạo
-            final playlist = playlists[index - 1];
-            final songCount = playlist.songs.length;
-            return Material(
-              color: isDark ? Colors.grey[900] : Colors.grey[100],
-              borderRadius: BorderRadius.circular(22),
-              elevation: 3,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(22),
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: backgroundColor,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                    ),
-                    builder: (_) => _PlaylistDetailSheet(
-                      playlistId: playlist.id,
-                      fetchPreviewUrl: fetchPreviewUrl,
-                      playSongWithFreshPreview: playSongWithFreshPreview,
-                      playAllWithFreshPreview: playAllWithFreshPreview,
-                      mainTextColor: mainTextColor,
-                      subTextColor: subTextColor,
-                      iconColor: iconColor,
-                      isDark: isDark,
-                    ),
-                  );
-                },
-                onLongPress: () {
-                  showModalBottomSheet(
-                    context: context,
-                    backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                    ),
-                    builder: (_) => _PlaylistOptionsMenu(
-                      playlist: playlist,
-                      onRename: () => _showRenamePlaylistDialog(context, playlist),
-                      iconColor: iconColor,
-                      mainTextColor: mainTextColor,
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: playlist.songs.isNotEmpty
-                            ? CachedNetworkImage(
-                          imageUrl: playlist.songs.first.coverUrl ?? '',
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            width: 60,
-                            height: 60,
-                            color: Colors.black26,
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            width: 60,
-                            height: 60,
-                            color: Colors.black26,
-                            child: Icon(Icons.music_note, color: subTextColor),
-                          ),
-                        )
-                            : Container(
-                          width: 60,
-                          height: 60,
-                          color: Colors.black26,
-                          child: Icon(Icons.queue_music, color: subTextColor),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              playlist.name,
-                              style: TextStyle(
-                                color: mainTextColor,
-                                fontSize: 19,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              manualFormat(tr('song_count'), ['$songCount']),
-                              style: TextStyle(
-                                color: subTextColor,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
-                        tooltip: tr('play_all'),
-                        onPressed: playlist.songs.isEmpty
-                            ? null
-                            : () => playAllWithFreshPreview(playlist.songs, context),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
+            },
+          );
+        },
+      ),
     );
   }
 }

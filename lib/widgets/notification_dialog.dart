@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../providers/notification_provider.dart';
 
-// Hàm format thủ công các biến {0}, %1$s, $args{0}
 String manualFormat(String template, List<String> args) {
   var result = template;
   for (var i = 0; i < args.length; i++) {
@@ -19,7 +18,7 @@ class NotificationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final locale = context.locale; // Đảm bảo rebuild khi đổi ngôn ngữ
+    final locale = context.locale;
     final notifications = context.watch<NotificationProvider>().notifications;
 
     return AlertDialog(
@@ -40,10 +39,9 @@ class NotificationDialog extends StatelessWidget {
             String message;
             if (n.key.isNotEmpty) {
               final List<String> args = n.args.map((e) => e.toString()).toList();
-              print('Render notification: key=${n.key}, args=$args');
-              final template = tr(n.key); // Không truyền args nữa!
-              message = manualFormat(template, args);
-              print('TR: key=${n.key}, args=$args, result=$message');
+              final template = tr(n.key, args: args);
+              // Nếu template không dùng args của easy_localization thì manualFormat vẫn hoạt động.
+              message = template.contains('{0}') ? manualFormat(template, args) : template;
             } else {
               message = n.legacyMessage ?? "";
             }

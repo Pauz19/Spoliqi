@@ -5,6 +5,17 @@ import '../models/song.dart';
 import '../providers/player_provider.dart';
 import '../providers/playlist_provider.dart';
 
+// Hàm format thủ công các biến {0}, %1$s, $args{0}
+String manualFormat(String template, List<String> args) {
+  var result = template;
+  for (var i = 0; i < args.length; i++) {
+    result = result.replaceAll('{$i}', args[i]);
+    result = result.replaceAll('%${i + 1}\$s', args[i]);
+    result = result.replaceAll('\$args{$i}', args[i]);
+  }
+  return result;
+}
+
 void showSongOptions(BuildContext context, Song song) {
   showModalBottomSheet(
     context: context,
@@ -68,7 +79,9 @@ void _showAddToPlaylist(BuildContext context, Song song) {
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(tr('added_to_playlist', args: [pl.name])),
+                content: Text(
+                    manualFormat(tr('added_to_playlist'), [song.title, pl.name])
+                ),
                 duration: const Duration(seconds: 2),
                 backgroundColor: Colors.green[600],
               ),
