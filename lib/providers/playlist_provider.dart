@@ -92,7 +92,7 @@ class PlaylistProvider extends ChangeNotifier {
       debugPrint('addPlaylist: Playlist created successfully!');
       // Thêm notification
       if (context != null) {
-        context.read<NotificationProvider>().addNotificationKey('Tạo playlist "$name" thành công');
+        context.read<NotificationProvider>().addNotificationKey('created_playlist', args: [name]);
       }
     } catch (e) {
       debugPrint('addPlaylist: error $e');
@@ -134,7 +134,7 @@ class PlaylistProvider extends ChangeNotifier {
     notifyListeners();
     // Thêm notification
     if (context != null) {
-      context.read<NotificationProvider>().addNotificationKey('Đã xoá "${song.title}" khỏi playlist "${playlist.name}"');
+      context.read<NotificationProvider>().addNotificationKey('removed_from_playlist', args: [song.title, playlist.name]);
     }
   }
 
@@ -166,7 +166,7 @@ class PlaylistProvider extends ChangeNotifier {
     notifyListeners();
     // Thêm notification
     if (context != null && oldSong.id.isNotEmpty) {
-      context.read<NotificationProvider>().addNotificationKey('Đã xoá "${oldSong.title}" khỏi playlist "${playlist.name}"');
+      context.read<NotificationProvider>().addNotificationKey('removed_from_playlist', args: [oldSong.title, playlist.name]);
     }
   }
 

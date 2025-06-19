@@ -16,8 +16,8 @@
   "added_to_queue": "Đã thêm vào hàng đợi",
   "no_playlist": "Bạn chưa có playlist nào.",
   "no_playlists": "Bạn chưa có playlist nào.",
-  "added_to_playlist": "Đã thêm vào \"{0}\"",
-  "removed_from_playlist": "Đã xóa khỏi \"{0}\"",
+  "added_to_playlist": "Đã thêm \"{0}\" vào playlist \"{1}\"",
+  "removed_from_playlist": "Đã xóa \"{0}\" khỏi playlist \"{1}\"",
   "removed_from_queue": "Đã xóa khỏi hàng đợi",
   "remove_song_success": "Đã xóa \"{0}\" khỏi playlist",
   "remove_song_error": "Xóa \"{0}\" khỏi playlist thất bại",
@@ -169,7 +169,9 @@
     "reset_mail_sent": "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư."
   },
   "removed_playlist": "Đã xóa playlist \"{0}\"",
+  "created_playlist": "Tạo playlist \"{0}\" thành công",
   "playlist_renamed": "Đã đổi tên playlist \"{0}\" thành \"{1}\"",
-  "profile_avatar_updated": "Đã cập nhật ảnh đại diện mới.",
-  "profile_name_changed": "Đã đổi tên hiển thị thành \"{0}\""
+  "profile_avatar_updated": "Đã cập nhật ảnh đại diện.",
+  "profile_name_changed": "Đã đổi tên hiển thị thành \"{0}\"",
+  "password_changed_success": "Đổi mật khẩu thành công!"
 }

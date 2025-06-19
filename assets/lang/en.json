@@ -16,8 +16,8 @@
   "added_to_queue": "Added to queue",
   "no_playlist": "You don't have any playlists.",
   "no_playlists": "You don't have any playlists.",
-  "added_to_playlist": "Added to \"{0}\"",
-  "removed_from_playlist": "Removed from \"{0}\"",
+  "added_to_playlist": "Added \"{0}\" to playlist \"{1}\"",
+  "removed_from_playlist": "Removed \"{0}\" from playlist \"{1}\"",
   "removed_from_queue": "Removed from queue",
   "remove_song_success": "Removed \"{0}\" from playlist",
   "remove_song_error": "Failed to remove \"{0}\" from playlist",
@@ -169,7 +169,9 @@
     "reset_mail_sent": "Password reset email sent. Please check your inbox."
   },
   "removed_playlist": "Removed playlist \"{0}\"",
+  "created_playlist": "Created playlist \"{0}\" successfully",
   "playlist_renamed": "Renamed playlist \"{0}\" to \"{1}\"",
   "profile_avatar_updated": "Profile avatar updated.",
-  "profile_name_changed": "Profile name changed to \"{0}\""
+  "profile_name_changed": "Profile name changed to \"{0}\"",
+  "password_changed_success": "Password changed successfully!"
 }
