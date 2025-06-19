@@ -57,10 +57,10 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
       // Gửi thông báo nếu đổi tên hoặc avatar
       if (context.mounted) {
         if (oldName != null && oldName != newName) {
-          context.read<NotificationProvider>().addNotificationKey('Đã đổi tên hiển thị thành "$newName"');
+          context.read<NotificationProvider>().addNotificationKey('profile_name_changed', args: [newName]);
         }
         if (oldPhotoUrl != null && oldPhotoUrl != newPhotoUrl) {
-          context.read<NotificationProvider>().addNotificationKey('Đã cập nhật ảnh đại diện mới');
+          context.read<NotificationProvider>().addNotificationKey('profile_avatar_updated');
         }
       }
 

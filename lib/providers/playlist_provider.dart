@@ -115,8 +115,7 @@ class PlaylistProvider extends ChangeNotifier {
       notifyListeners();
       // Thêm notification
       if (context != null) {
-        context.read<NotificationProvider>().addNotificationKey('Đã thêm "${song.title}" vào playlist "${playlist.name}"');
-      }
+        context.read<NotificationProvider>().addNotificationKey('added_to_playlist', args: [song.title, playlist.name]);      }
     }
   }
 
@@ -148,7 +147,7 @@ class PlaylistProvider extends ChangeNotifier {
     notifyListeners();
     // Thêm notification
     if (context != null && pl.id.isNotEmpty) {
-      context.read<NotificationProvider>().addNotificationKey('Đã xoá playlist "${pl.name}"');
+      context.read<NotificationProvider>().addNotificationKey('removed_playlist', args: [pl.name]);
     }
   }
 
@@ -188,7 +187,10 @@ class PlaylistProvider extends ChangeNotifier {
 
     // Thêm notification
     if (context != null) {
-      context.read<NotificationProvider>().addNotificationKey('Đã đổi tên playlist "$oldName" thành "$newName"');
+      context.read<NotificationProvider>().addNotificationKey(
+        'playlist_renamed',
+        args: [oldName, newName],
+      );
     }
   }
 }

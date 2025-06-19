@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:provider/provider.dart'; // Thêm dòng này
+import 'package:provider/provider.dart';
 import '../models/song.dart';
-import 'notification_provider.dart'; // Thêm dòng này
+import 'notification_provider.dart';
 
 class LikedSongsProvider extends ChangeNotifier {
   final List<Song> _likedSongs = [];
@@ -55,9 +55,12 @@ class LikedSongsProvider extends ChangeNotifier {
         .set(song.toMap());
     notifyListeners();
 
-    // Thêm notification
+    // Thêm notification (đa ngôn ngữ)
     if (context != null) {
-      context.read<NotificationProvider>().addNotificationKey('Bạn đã thích bài hát "${song.title}"');
+      context.read<NotificationProvider>().addNotificationKey(
+        'liked_song',
+        args: [song.title],
+      );
     }
   }
 
@@ -71,9 +74,12 @@ class LikedSongsProvider extends ChangeNotifier {
         .remove();
     notifyListeners();
 
-    // Thêm notification
+    // Thêm notification (đa ngôn ngữ)
     if (context != null) {
-      context.read<NotificationProvider>().addNotificationKey('Bạn đã bỏ thích bài hát "${song.title}"');
+      context.read<NotificationProvider>().addNotificationKey(
+        'unliked_song',
+        args: [song.title],
+      );
     }
   }
 

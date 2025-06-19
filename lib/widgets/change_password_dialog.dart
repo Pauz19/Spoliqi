@@ -59,7 +59,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
         _success = tr('settings.password_changed_success');
       });
       // Thêm notification
-      context.read<NotificationProvider>().addNotificationKey(tr('settings.password_changed_success'));
+      context.read<NotificationProvider>().addNotificationKey('password_changed_success');
     } on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password') {
         setState(() {

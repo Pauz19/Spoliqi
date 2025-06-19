@@ -8,10 +8,9 @@ class NotificationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Force rebuild when locale changes!
-    final locale = context.locale;
-
+    final locale = context.locale; // Đảm bảo rebuild khi đổi ngôn ngữ
     final notifications = context.watch<NotificationProvider>().notifications;
+
     return AlertDialog(
       title: Text(tr("notifications")),
       content: SizedBox(
@@ -26,9 +25,16 @@ class NotificationDialog extends StatelessWidget {
             final n = notifications[index];
             final formattedTime = DateFormat.Hm(locale.languageCode).format(n.time);
             final formattedDate = DateFormat.yMd(locale.languageCode).format(n.time);
-            final message = n.key.isNotEmpty
-                ? tr(n.key, args: n.args)
-                : (n.legacyMessage ?? "");
+
+            String message;
+            if (n.key.isNotEmpty) {
+              // Đảm bảo args là List<String>
+              final List<String> args = n.args.map((e) => e.toString()).toList();
+              message = tr(n.key, args: args);
+            } else {
+              message = n.legacyMessage ?? "";
+            }
+
             return ListTile(
               leading: const Icon(Icons.notifications),
               title: Text(message),
