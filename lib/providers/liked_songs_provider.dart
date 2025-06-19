@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:provider/provider.dart'; // Thêm dòng này
 import '../models/song.dart';
+import 'notification_provider.dart'; // Thêm dòng này
 
 class LikedSongsProvider extends ChangeNotifier {
   final List<Song> _likedSongs = [];
@@ -42,7 +44,7 @@ class LikedSongsProvider extends ChangeNotifier {
   }
 
   // Thích một bài hát
-  Future<void> likeSong(Song song) async {
+  Future<void> likeSong(Song song, {BuildContext? context}) async {
     final uid = _uid;
     if (uid == null) return;
     if (_likedSongs.any((s) => s.id == song.id)) return;
@@ -52,10 +54,15 @@ class LikedSongsProvider extends ChangeNotifier {
         .ref('users/$uid/liked_songs/${song.id}')
         .set(song.toMap());
     notifyListeners();
+
+    // Thêm notification
+    if (context != null) {
+      context.read<NotificationProvider>().addNotificationKey('Bạn đã thích bài hát "${song.title}"');
+    }
   }
 
   // Bỏ thích một bài hát
-  Future<void> unlikeSong(Song song) async {
+  Future<void> unlikeSong(Song song, {BuildContext? context}) async {
     final uid = _uid;
     if (uid == null) return;
     _likedSongs.removeWhere((s) => s.id == song.id);
@@ -63,6 +70,11 @@ class LikedSongsProvider extends ChangeNotifier {
         .ref('users/$uid/liked_songs/${song.id}')
         .remove();
     notifyListeners();
+
+    // Thêm notification
+    if (context != null) {
+      context.read<NotificationProvider>().addNotificationKey('Bạn đã bỏ thích bài hát "${song.title}"');
+    }
   }
 
   // Kiểm tra bài hát đã thích chưa

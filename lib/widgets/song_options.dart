@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../models/song.dart';
 import '../providers/player_provider.dart';
 import '../providers/playlist_provider.dart';
@@ -17,19 +18,19 @@ void showSongOptions(BuildContext context, Song song) {
         children: [
           ListTile(
             leading: const Icon(Icons.queue_music, color: Colors.white),
-            title: const Text('Thêm vào danh sách chờ', style: TextStyle(color: Colors.white)),
+            title: Text('add_to_queue'.tr(), style: const TextStyle(color: Colors.white)),
             onTap: () {
               Provider.of<PlayerProvider>(context, listen: false).addToQueue(song);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Đã thêm vào danh sách chờ'),
-                      duration: Duration(seconds: 2)));
+                  SnackBar(
+                      content: Text('added_to_queue'.tr()),
+                      duration: const Duration(seconds: 2)));
             },
           ),
           ListTile(
             leading: const Icon(Icons.playlist_add, color: Colors.white),
-            title: const Text('Thêm vào playlist', style: TextStyle(color: Colors.white)),
+            title: Text('add_to_playlist'.tr(), style: const TextStyle(color: Colors.white)),
             onTap: () {
               Navigator.pop(context);
               _showAddToPlaylist(context, song);
@@ -51,10 +52,10 @@ void _showAddToPlaylist(BuildContext context, Song song) {
     ),
     builder: (_) {
       if (playlists.isEmpty) {
-        return const Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Text('Bạn chưa có playlist nào.',
-              style: TextStyle(color: Colors.white70, fontSize: 16)),
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Text('no_playlist'.tr(),
+              style: const TextStyle(color: Colors.white70, fontSize: 16)),
         );
       }
       return ListView(
@@ -67,8 +68,8 @@ void _showAddToPlaylist(BuildContext context, Song song) {
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Đã thêm vào "${pl.name}"'),
-                duration: Duration(seconds: 2),
+                content: Text(tr('added_to_playlist', args: [pl.name])),
+                duration: const Duration(seconds: 2),
                 backgroundColor: Colors.green[600],
               ),
             );

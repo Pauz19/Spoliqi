@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../models/song.dart';
 import '../services/deezer_service.dart';
 import '../providers/player_provider.dart';
@@ -12,6 +13,7 @@ import 'settings_page.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../widgets/notification_dialog.dart'; // --- Thêm dòng này nếu chưa có
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -81,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (e) {
       setState(() {
-        searchError = 'Lỗi tìm kiếm: $e';
+        searchError = tr('search_error', args: ['$e']);
         isLoadingSearch = false;
         searchResults = [];
       });
@@ -117,12 +119,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (previewUrl != null && previewUrl.isNotEmpty) {
       final song = Song(
         id: track['id'].toString(),
-        title: track['title'] ?? 'Không rõ tên',
-        artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
+        title: track['title'] ?? tr('unknown_title'),
+        artist: track['artist']?['name'] ?? tr('unknown_artist'),
         audioUrl: previewUrl,
         coverUrl: track['album']?['cover_big'] ?? '',
       );
-      // Sửa: truyền danh sách gốc vào PlayerScreen
       Provider.of<PlayerProvider>(context, listen: false)
           .setQueue([song], startIndex: 0);
       Navigator.push(
@@ -133,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bài này không hỗ trợ preview 30s!')),
+        SnackBar(content: Text(tr('preview_not_supported'))),
       );
     }
   }
@@ -142,8 +143,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final previewUrl = await fetchPreviewUrl(track['id'].toString());
     final song = Song(
       id: track['id'].toString(),
-      title: track['title'] ?? 'Không rõ tên',
-      artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
+      title: track['title'] ?? tr('unknown_title'),
+      artist: track['artist']?['name'] ?? tr('unknown_artist'),
       audioUrl: previewUrl ?? '',
       coverUrl: track['album']?['cover_big'] ?? '',
     );
@@ -153,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final userName = user?.displayName ?? user?.email ?? 'User';
+    final userName = user?.displayName ?? user?.email ?? tr('user');
     final avatarUrl = user?.photoURL;
 
     final theme = Theme.of(context);
@@ -189,7 +190,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Spacer(),
                   IconButton(
                     icon: Icon(Icons.notifications_none, color: iconColor, size: 28),
-                    onPressed: () {},
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => const NotificationDialog(),
+                      );
+                    },
                   ),
                   IconButton(
                     icon: Icon(Icons.settings, color: iconColor, size: 28),
@@ -208,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Good morning, $userName!',
+                  tr('good_morning', args: [userName]),
                   style: TextStyle(
                     fontSize: 29,
                     fontWeight: FontWeight.bold,
@@ -230,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onSubmitted: (_) => _onSearch(),
                       style: TextStyle(color: mainTextColor),
                       decoration: InputDecoration(
-                        hintText: 'Nghệ sĩ, bài hát hoặc album...',
+                        hintText: tr('search_hint'),
                         hintStyle: TextStyle(color: subTextColor),
                         filled: true,
                         fillColor: isDark ? Colors.white12 : Colors.black12,
@@ -282,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: Text(
-                              'Lỗi tải playlist: ${snapshot.error}',
+                              tr('playlist_load_error', args: ['${snapshot.error}']),
                               style: const TextStyle(color: Colors.redAccent, fontSize: 16),
                             ),
                           );
@@ -290,7 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (!snapshot.hasData || snapshot.data!.isEmpty) {
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Text('Không tìm thấy bài hát', style: TextStyle(color: mainTextColor)),
+                            child: Text(tr('not_found_song'), style: TextStyle(color: mainTextColor)),
                           );
                         }
                         final shuffledTracks = List<dynamic>.from(snapshot.data!)..shuffle(Random());
@@ -300,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               child: Text(
-                                'Playlist đề xuất',
+                                tr('suggested_playlist'),
                                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: mainTextColor),
                               ),
                             ),
@@ -339,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (snapshot.hasError) {
                           return Center(
                             child: Text(
-                              'Lỗi: ${snapshot.error}',
+                              tr('load_error', args: ['${snapshot.error}']),
                               style: const TextStyle(color: Colors.redAccent, fontSize: 16),
                             ),
                           );
@@ -350,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Icon(Icons.music_off, size: 60, color: subTextColor),
                               const SizedBox(height: 16),
-                              Text('Không có bài hát nào.', style: TextStyle(color: subTextColor, fontSize: 18)),
+                              Text(tr('no_songs'), style: TextStyle(color: subTextColor, fontSize: 18)),
                             ],
                           );
                         }
@@ -390,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Row(
                                 children: [
                                   Text(
-                                    'Recommended for you',
+                                    tr('recommended_for_you'),
                                     style: TextStyle(
                                       color: mainTextColor,
                                       fontSize: 22,
@@ -451,7 +457,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (searchResults.isEmpty) {
       return Center(
-        child: Text('Không tìm thấy kết quả.', style: TextStyle(color: subTextColor, fontSize: 17)),
+        child: Text(tr('search_not_found'), style: TextStyle(color: subTextColor, fontSize: 17)),
       );
     }
     return ListView.separated(
@@ -464,8 +470,8 @@ class _HomeScreenState extends State<HomeScreen> {
         final track = searchResults[index];
         final song = Song(
           id: track['id'].toString(),
-          title: track['title'] ?? 'Không rõ tên',
-          artist: track['artist']?['name'] ?? 'Không rõ nghệ sĩ',
+          title: track['title'] ?? tr('unknown_title'),
+          artist: track['artist']?['name'] ?? tr('unknown_artist'),
           audioUrl: track['preview'] ?? '',
           coverUrl: track['album']?['cover_big'] ?? '',
         );
@@ -523,8 +529,8 @@ class _VpopSongCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String title = track['title'] ?? 'Không rõ tên';
-    final String artist = track['artist']?['name'] ?? 'Không rõ nghệ sĩ';
+    final String title = track['title'] ?? tr('unknown_title');
+    final String artist = track['artist']?['name'] ?? tr('unknown_artist');
     final String? coverUrl = track['album']?['cover_medium'];
 
     return InkWell(
@@ -592,8 +598,8 @@ class _SpotifyPlaylistTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String title = track['title'] ?? 'Không rõ tên';
-    final String artist = track['artist']?['name'] ?? 'Không rõ nghệ sĩ';
+    final String title = track['title'] ?? tr('unknown_title');
+    final String artist = track['artist']?['name'] ?? tr('unknown_artist');
     final String? coverUrl = track['album']?['cover_small'];
 
     final bgColors = [
@@ -673,8 +679,8 @@ class _SpotifyCardVertical extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String title = track['title'] ?? 'Không rõ tên';
-    final String artist = track['artist']?['name'] ?? 'Không rõ nghệ sĩ';
+    final String title = track['title'] ?? tr('unknown_title');
+    final String artist = track['artist']?['name'] ?? tr('unknown_artist');
     final String? coverUrl = track['album']?['cover_medium'];
 
     return InkWell(

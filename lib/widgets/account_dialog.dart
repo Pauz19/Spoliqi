@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../providers/playlist_provider.dart';
 
 class AccountDialog extends StatelessWidget {
@@ -11,7 +12,7 @@ class AccountDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     if (user == null) return const SizedBox.shrink();
 
-    final displayName = user!.displayName ?? user!.email ?? 'Không rõ tên';
+    final displayName = user!.displayName ?? user!.email ?? tr('unknown_name');
     final email = user!.email ?? '';
     final photoUrl = user!.photoURL;
     final uid = user!.uid;
@@ -104,7 +105,7 @@ class AccountDialog extends StatelessWidget {
                 Icon(Icons.queue_music, color: Colors.greenAccent[100], size: 20),
                 const SizedBox(width: 4),
                 Text(
-                  '$playlistCount playlist đã tạo',
+                  tr('playlist_created_count', args: ['$playlistCount']),
                   style: const TextStyle(color: Colors.white70, fontSize: 15),
                 ),
               ],
@@ -118,7 +119,7 @@ class AccountDialog extends StatelessWidget {
           style: TextButton.styleFrom(
             foregroundColor: Colors.white70,
           ),
-          child: const Text('Đóng'),
+          child: Text('close'.tr()),
         ),
         ElevatedButton.icon(
           onPressed: () async {
@@ -126,21 +127,21 @@ class AccountDialog extends StatelessWidget {
               context: context,
               builder: (ctx) => AlertDialog(
                 backgroundColor: Colors.grey[900],
-                title: const Text(
-                  'Đăng xuất?',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                title: Text(
+                  'logout'.tr(),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
-                content: const Text(
-                  'Bạn chắc chắn muốn đăng xuất?',
-                  style: TextStyle(color: Colors.white70),
+                content: Text(
+                  'logout_confirm'.tr(),
+                  style: const TextStyle(color: Colors.white70),
                 ),
                 actions: [
                   TextButton(
-                    child: const Text('Huỷ', style: TextStyle(color: Colors.white54)),
+                    child: Text('cancel'.tr(), style: const TextStyle(color: Colors.white54)),
                     onPressed: () => Navigator.pop(ctx, false),
                   ),
                   TextButton(
-                    child: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
+                    child: Text('logout'.tr(), style: const TextStyle(color: Colors.red)),
                     onPressed: () => Navigator.pop(ctx, true),
                   ),
                 ],
@@ -153,7 +154,7 @@ class AccountDialog extends StatelessWidget {
             }
           },
           icon: const Icon(Icons.logout, color: Colors.white),
-          label: const Text('Đăng xuất', style: TextStyle(color: Colors.white, fontSize: 16)),
+          label: Text('logout'.tr(), style: const TextStyle(color: Colors.white, fontSize: 16)),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.redAccent,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

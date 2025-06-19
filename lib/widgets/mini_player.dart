@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../providers/player_provider.dart';
 import '../screens/player_screen.dart';
 import '../models/song.dart';
@@ -261,7 +262,7 @@ class _MiniPlayerState extends State<MiniPlayer> with SingleTickerProviderStateM
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => provider.togglePlayPause(),
-                        tooltip: provider.isPlaying ? 'Tạm dừng' : 'Phát',
+                        tooltip: provider.isPlaying ? tr('pause') : tr('play'),
                       ),
                       Text(
                         formatTime(current),

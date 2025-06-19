@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../providers/player_provider.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/liked_songs_provider.dart';
@@ -34,7 +35,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         if (playlists.isEmpty) {
           return Padding(
             padding: const EdgeInsets.all(24.0),
-            child: Text('Bạn chưa có playlist nào.',
+            child: Text(tr('no_playlists'),
                 style: TextStyle(color: mainTextColor, fontSize: 16)),
           );
         }
@@ -44,11 +45,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
             title: Text(pl.name, style: TextStyle(color: mainTextColor)),
             onTap: () {
               Provider.of<PlaylistProvider>(context, listen: false)
-                  .addSongToPlaylist(pl.id, song);
+                  .addSongToPlaylist(pl.id, song, context: context); // Truyền context để có notification
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Đã thêm vào "${pl.name}"'),
+                  content: Text(tr('added_to_playlist', args: [pl.name])),
                   backgroundColor: Colors.green[600],
                   duration: const Duration(seconds: 2),
                 ),
@@ -92,7 +93,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   Icon(Icons.music_off, size: 80, color: subTextColor.withOpacity(0.3)),
                   const SizedBox(height: 18),
                   Text(
-                    'Bạn đã nghe hết danh sách nhạc!',
+                    tr('queue_ended'),
                     style: TextStyle(
                         color: subTextColor,
                         fontSize: 20,
@@ -101,14 +102,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Hãy chọn một bài hát khác hoặc phát lại playlist.',
+                    tr('queue_ended_hint'),
                     style: TextStyle(color: subTextColor.withOpacity(0.7), fontSize: 15),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     icon: Icon(Icons.refresh, color: Colors.greenAccent),
-                    label: Text('Phát lại từ đầu', style: TextStyle(color: mainTextColor)),
+                    label: Text(tr('play_again'), style: TextStyle(color: mainTextColor)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isDark ? Colors.black87 : Colors.grey[200],
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -119,7 +120,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         Provider.of<PlayerProvider>(context, listen: false).setQueue(original, startIndex: 0);
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Không tìm thấy danh sách nhạc gốc!")),
+                          SnackBar(content: Text(tr('no_original_queue'))),
                         );
                       }
                     },
@@ -153,7 +154,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 actions: [
                   IconButton(
                     icon: Icon(Icons.playlist_add, color: iconColor, size: 20),
-                    tooltip: "Thêm vào playlist",
+                    tooltip: tr('add_to_playlist'),
                     onPressed: () => _showAddToPlaylist(context, song),
                     splashRadius: 18,
                   ),
@@ -196,19 +197,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       onRepeat: provider.cycleRepeatMode,
                       onLike: () async {
                         if (isLiked) {
-                          await likedSongsProvider.unlikeSong(song);
+                          await likedSongsProvider.unlikeSong(song, context: context); // truyền context để có notification
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Đã xóa khỏi Nhạc đã thích'),
-                              duration: Duration(seconds: 2),
+                            SnackBar(
+                              content: Text(tr('removed_from_liked')),
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         } else {
-                          await likedSongsProvider.likeSong(song);
+                          await likedSongsProvider.likeSong(song, context: context); // truyền context để có notification
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Đã thêm vào Nhạc đã thích'),
-                              duration: Duration(seconds: 2),
+                            SnackBar(
+                              content: Text(tr('added_to_liked')),
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         }
@@ -237,7 +238,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   child: FloatingActionButton(
                     backgroundColor: isDark ? Colors.black.withOpacity(0.88) : Colors.white.withOpacity(0.93),
                     elevation: 2,
-                    tooltip: "Xem danh sách chờ",
+                    tooltip: tr('see_queue'),
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -432,12 +433,14 @@ class _PlayerTab extends StatelessWidget {
                             color: isShuffling ? Colors.greenAccent : subTextColor,
                             size: 23,
                           ),
-                          tooltip: isShuffling ? "Tắt phát ngẫu nhiên" : "Phát ngẫu nhiên",
+                          tooltip: isShuffling
+                              ? tr('shuffle_off')
+                              : tr('shuffle_on'),
                           onPressed: onShuffle,
                         ),
                         IconButton(
                           icon: Icon(Icons.skip_previous, color: iconColor, size: 30),
-                          tooltip: "Bài trước",
+                          tooltip: tr('previous_song'),
                           onPressed: onPrev,
                         ),
                         const SizedBox(width: 2),
@@ -447,13 +450,13 @@ class _PlayerTab extends StatelessWidget {
                             color: Colors.greenAccent,
                             size: 50,
                           ),
-                          tooltip: isPlaying ? "Tạm dừng" : "Phát",
+                          tooltip: isPlaying ? tr('pause') : tr('play'),
                           onPressed: onPlayPause,
                         ),
                         const SizedBox(width: 2),
                         IconButton(
                           icon: Icon(Icons.skip_next, color: iconColor, size: 30),
-                          tooltip: "Bài tiếp theo",
+                          tooltip: tr('next_song'),
                           onPressed: onNext,
                         ),
                         IconButton(
@@ -467,10 +470,10 @@ class _PlayerTab extends StatelessWidget {
                             size: 23,
                           ),
                           tooltip: repeatMode == RepeatMode.none
-                              ? "Lặp lại: Tắt"
+                              ? tr('repeat_off')
                               : repeatMode == RepeatMode.all
-                              ? "Lặp lại tất cả"
-                              : "Lặp lại một bài",
+                              ? tr('repeat_all')
+                              : tr('repeat_one'),
                           onPressed: onRepeat,
                         ),
                       ],
@@ -486,21 +489,21 @@ class _PlayerTab extends StatelessWidget {
                               color: isLiked ? Colors.greenAccent : subTextColor,
                               size: 22,
                             ),
-                            tooltip: isLiked ? "Bỏ thích" : "Thích",
+                            tooltip: isLiked ? tr('unlike') : tr('like'),
                             onPressed: onLike,
                           ),
                           const SizedBox(width: 8),
                           IconButton(
                             icon: Icon(Icons.download_for_offline_outlined,
                                 color: subTextColor, size: 22),
-                            tooltip: "Tải về",
+                            tooltip: tr('download'),
                             onPressed: () {},
                           ),
                           const SizedBox(width: 8),
                           IconButton(
                             icon: Icon(Icons.share_outlined,
                                 color: subTextColor, size: 22),
-                            tooltip: "Chia sẻ",
+                            tooltip: tr('share'),
                             onPressed: () {},
                           ),
                         ],

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/change_password_dialog.dart';
+import '../widgets/edit_profile_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -11,7 +14,18 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String selectedLanguage = 'Tiếng Việt';
+  String? selectedLanguage;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = context.locale;
+    if (locale.languageCode == 'en') {
+      selectedLanguage = 'English';
+    } else {
+      selectedLanguage = 'Tiếng Việt';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +34,11 @@ class _SettingsPageState extends State<SettingsPage> {
     final Color iconColor = isDarkMode ? Colors.white : Colors.black87;
     final Color divider = Theme.of(context).dividerColor.withOpacity(0.15);
 
+    selectedLanguage ??= context.locale.languageCode == 'en' ? 'English' : 'Tiếng Việt';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cài đặt'),
+        title: Text('settings.title'.tr()),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         iconTheme: IconThemeData(color: iconColor),
       ),
@@ -57,7 +73,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user?.displayName ?? "Chưa đặt tên",
+                        user?.displayName ?? "not_set".tr(),
                         style: TextStyle(
                           color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87,
                           fontWeight: FontWeight.bold,
@@ -77,8 +93,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 IconButton(
                   icon: Icon(Icons.edit, color: iconColor),
-                  onPressed: () {
-                    // TODO: Show edit profile dialog
+                  onPressed: () async {
+                    if (user == null) return;
+                    final updated = await showDialog(
+                      context: context,
+                      builder: (_) => EditProfileDialog(
+                        currentName: user.displayName,
+                        currentPhotoUrl: user.photoURL,
+                        currentEmail: user.email,
+                      ),
+                    );
+                    if (updated == true) setState(() {});
                   },
                 ),
               ],
@@ -89,10 +114,13 @@ class _SettingsPageState extends State<SettingsPage> {
           // Đổi mật khẩu
           ListTile(
             leading: Icon(Icons.lock_reset, color: iconColor),
-            title: Text('Đổi mật khẩu', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+            title: Text('settings.change_password'.tr(), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
             trailing: Icon(Icons.arrow_forward_ios, color: iconColor.withOpacity(0.3), size: 18),
             onTap: () {
-              // TODO: Show change password dialog
+              showDialog(
+                context: context,
+                builder: (_) => const ChangePasswordDialog(),
+              );
             },
           ),
           Divider(color: divider, thickness: 1),
@@ -100,7 +128,7 @@ class _SettingsPageState extends State<SettingsPage> {
           // Chế độ hiển thị
           SwitchListTile(
             secondary: Icon(Icons.dark_mode, color: iconColor),
-            title: Text('Chế độ tối', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+            title: Text('dark_mode'.tr(), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
             value: isDarkMode,
             onChanged: (val) {
               context.read<ThemeProvider>().toggleTheme(val);
@@ -112,14 +140,14 @@ class _SettingsPageState extends State<SettingsPage> {
           // Ngôn ngữ ứng dụng
           ListTile(
             leading: Icon(Icons.language, color: iconColor),
-            title: Text('Ngôn ngữ', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
-            subtitle: Text(selectedLanguage, style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7) ?? Colors.black54)),
+            title: Text('language'.tr(), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+            subtitle: Text(selectedLanguage!, style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7) ?? Colors.black54)),
             trailing: Icon(Icons.arrow_forward_ios, color: iconColor.withOpacity(0.3), size: 18),
             onTap: () async {
               final lang = await showDialog<String>(
                 context: context,
                 builder: (_) => SimpleDialog(
-                  title: const Text("Chọn ngôn ngữ"),
+                  title: Text("choose_language".tr()),
                   children: [
                     SimpleDialogOption(
                       child: const Text("Tiếng Việt"),
@@ -134,7 +162,11 @@ class _SettingsPageState extends State<SettingsPage> {
               );
               if (lang != null) {
                 setState(() => selectedLanguage = lang);
-                // TODO: Cập nhật ngôn ngữ toàn app
+                if (lang == "English") {
+                  await context.setLocale(const Locale('en'));
+                } else {
+                  await context.setLocale(const Locale('vi'));
+                }
               }
             },
           ),
@@ -143,21 +175,21 @@ class _SettingsPageState extends State<SettingsPage> {
           // Đăng xuất
           ListTile(
             leading: Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text('Đăng xuất tài khoản', style: TextStyle(color: Colors.redAccent)),
+            title: Text('logout'.tr(), style: const TextStyle(color: Colors.redAccent)),
             onTap: () async {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
-                  title: const Text("Đăng xuất"),
-                  content: const Text("Bạn có chắc chắn muốn đăng xuất không?"),
+                  title: Text("logout".tr()),
+                  content: Text("logout_confirm".tr()),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
-                      child: const Text("Hủy"),
+                      child: Text("cancel".tr()),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      child: const Text("Đăng xuất"),
+                      child: Text("logout".tr()),
                     ),
                   ],
                 ),
@@ -173,7 +205,7 @@ class _SettingsPageState extends State<SettingsPage> {
           // Xem điều khoản/dịch vụ/hỗ trợ
           ListTile(
             leading: Icon(Icons.info_outline, color: iconColor),
-            title: Text('Điều khoản, dịch vụ & hỗ trợ', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+            title: Text('terms_support'.tr(), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
             trailing: Icon(Icons.arrow_forward_ios, color: iconColor.withOpacity(0.3), size: 18),
             onTap: () {
               // TODO: Show terms/support dialog or navigate to another page

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:provider/provider.dart'; // Thêm nếu chưa có
 import '../models/playlist.dart';
 import '../models/song.dart';
+import 'notification_provider.dart'; // Thêm dòng này
 
 class PlaylistProvider extends ChangeNotifier {
   final List<Playlist> _playlists = [];
@@ -41,7 +43,7 @@ class PlaylistProvider extends ChangeNotifier {
       final ref = FirebaseDatabase.instance.ref('playlists/$uid');
       final snapshot = await ref.get();
 
-      print('Firebase snapshot: ${snapshot.value}'); // DEBUG: Xem dữ liệu lấy về
+      debugPrint('Firebase snapshot: ${snapshot.value}'); // DEBUG: Xem dữ liệu lấy về
 
       _playlists.clear();
       if (snapshot.exists && snapshot.value is Map) {
@@ -66,17 +68,17 @@ class PlaylistProvider extends ChangeNotifier {
         }
       }
     } catch (e, stack) {
-      print('LỖI khi load playlist: $e');
-      print(stack);
+      debugPrint('Error loading playlist: $e');
+      debugPrint(stack.toString());
     }
     isLoading = false;
     notifyListeners();
   }
 
   // Thêm playlist mới
-  Future<void> addPlaylist(String name) async {
+  Future<void> addPlaylist(String name, {BuildContext? context}) async {
     if (_uid == null) {
-      print('addPlaylist: user not logged in!');
+      debugPrint('addPlaylist: user not logged in!');
       return;
     }
     try {
@@ -87,14 +89,18 @@ class PlaylistProvider extends ChangeNotifier {
         'createdAt': DateTime.now().toIso8601String(),
       });
       await loadPlaylists();
-      print('addPlaylist: tạo playlist thành công!');
+      debugPrint('addPlaylist: Playlist created successfully!');
+      // Thêm notification
+      if (context != null) {
+        context.read<NotificationProvider>().addNotificationKey('Tạo playlist "$name" thành công');
+      }
     } catch (e) {
-      print('addPlaylist: lỗi $e');
+      debugPrint('addPlaylist: error $e');
     }
   }
 
   // Thêm bài hát vào playlist
-  Future<void> addSongToPlaylist(String playlistId, Song song) async {
+  Future<void> addSongToPlaylist(String playlistId, Song song, {BuildContext? context}) async {
     if (_uid == null) return;
     final idx = _playlists.indexWhere((pl) => pl.id == playlistId);
     if (idx == -1) return;
@@ -107,11 +113,15 @@ class PlaylistProvider extends ChangeNotifier {
       final ref = FirebaseDatabase.instance.ref('playlists/$_uid/$playlistId/songs');
       await ref.set(playlist.songs.map((s) => s.toMap()).toList());
       notifyListeners();
+      // Thêm notification
+      if (context != null) {
+        context.read<NotificationProvider>().addNotificationKey('Đã thêm "${song.title}" vào playlist "${playlist.name}"');
+      }
     }
   }
 
   // Xoá bài hát khỏi playlist
-  Future<void> removeSongFromPlaylist(String playlistId, Song song) async {
+  Future<void> removeSongFromPlaylist(String playlistId, Song song, {BuildContext? context}) async {
     if (_uid == null) return;
     final idx = _playlists.indexWhere((pl) => pl.id == playlistId);
     if (idx == -1) return;
@@ -123,36 +133,51 @@ class PlaylistProvider extends ChangeNotifier {
     final ref = FirebaseDatabase.instance.ref('playlists/$_uid/$playlistId/songs');
     await ref.set(playlist.songs.map((s) => s.toMap()).toList());
     notifyListeners();
+    // Thêm notification
+    if (context != null) {
+      context.read<NotificationProvider>().addNotificationKey('Đã xoá "${song.title}" khỏi playlist "${playlist.name}"');
+    }
   }
 
   // Xoá playlist
-  Future<void> removePlaylist(String playlistId) async {
+  Future<void> removePlaylist(String playlistId, {BuildContext? context}) async {
     if (_uid == null) return;
+    final pl = _playlists.firstWhere((pl) => pl.id == playlistId, orElse: () => Playlist(id: '', name: '', songs: []));
     _playlists.removeWhere((pl) => pl.id == playlistId);
     await FirebaseDatabase.instance.ref('playlists/$_uid/$playlistId').remove();
     notifyListeners();
+    // Thêm notification
+    if (context != null && pl.id.isNotEmpty) {
+      context.read<NotificationProvider>().addNotificationKey('Đã xoá playlist "${pl.name}"');
+    }
   }
 
   // Xoá bài hát khỏi playlist bằng songId
-  Future<void> removeSongFromPlaylistById(String playlistId, String songId) async {
+  Future<void> removeSongFromPlaylistById(String playlistId, String songId, {BuildContext? context}) async {
     if (_uid == null) return;
     final idx = _playlists.indexWhere((pl) => pl.id == playlistId);
     if (idx == -1) return;
 
     final playlist = _playlists[idx];
+    final oldSong = playlist.songs.firstWhere((s) => s.id == songId, orElse: () => Song(id: '', title: '', artist: '', audioUrl: '', coverUrl: ''));
     playlist.songs.removeWhere((s) => s.id == songId);
 
     final ref = FirebaseDatabase.instance.ref('playlists/$_uid/$playlistId/songs');
     await ref.set(playlist.songs.map((s) => s.toMap()).toList());
     notifyListeners();
+    // Thêm notification
+    if (context != null && oldSong.id.isNotEmpty) {
+      context.read<NotificationProvider>().addNotificationKey('Đã xoá "${oldSong.title}" khỏi playlist "${playlist.name}"');
+    }
   }
 
   // ĐỔI TÊN PLAYLIST
-  Future<void> renamePlaylist(String playlistId, String newName) async {
+  Future<void> renamePlaylist(String playlistId, String newName, {BuildContext? context}) async {
     if (_uid == null) return;
     final idx = _playlists.indexWhere((pl) => pl.id == playlistId);
     if (idx == -1) return;
 
+    final oldName = _playlists[idx].name;
     // Tạo object mới với tên mới, giữ nguyên các field khác
     _playlists[idx] = _playlists[idx].copyWith(name: newName);
     notifyListeners();
@@ -160,5 +185,10 @@ class PlaylistProvider extends ChangeNotifier {
     // Cập nhật trên Realtime Database
     final ref = FirebaseDatabase.instance.ref('playlists/$_uid/$playlistId/name');
     await ref.set(newName);
+
+    // Thêm notification
+    if (context != null) {
+      context.read<NotificationProvider>().addNotificationKey('Đã đổi tên playlist "$oldName" thành "$newName"');
+    }
   }
 }

@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../screens/player_screen.dart';
 import '../providers/player_provider.dart';
 import '../models/song.dart';
-import '../widgets/song_options.dart'; // <-- Thêm import này
+import '../widgets/song_options.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -37,12 +38,12 @@ class _SearchScreenState extends State<SearchScreen> {
         });
       } else {
         setState(() {
-          _error = 'Lỗi mạng hoặc API';
+          _error = tr('network_or_api_error');
         });
       }
     } catch (e) {
       setState(() {
-        _error = 'Không thể tìm kiếm: $e';
+        _error = tr('search_failed', args: ['$e']);
       });
     } finally {
       setState(() {
@@ -62,7 +63,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tìm kiếm bài hát'),
+        title: Text('search_song'.tr()),
       ),
       body: Column(
         children: [
@@ -75,7 +76,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     controller: _searchController,
                     onSubmitted: (_) => _onSearch(),
                     decoration: InputDecoration(
-                      hintText: 'Nhập tên bài hát hoặc nghệ sĩ...',
+                      hintText: tr('search_song_hint'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -102,10 +103,10 @@ class _SearchScreenState extends State<SearchScreen> {
           if (!_isLoading && _error == null)
             Expanded(
               child: _tracks.isEmpty
-                  ? const Center(child: Text('Không có kết quả nào.'))
+                  ? Center(child: Text(tr('search_no_result')))
                   : ListView.separated(
                 padding: const EdgeInsets.only(
-                  bottom: 54, // Chỉ cần chiều cao MiniPlayer!
+                  bottom: 54,
                 ),
                 itemCount: _tracks.length,
                 separatorBuilder: (context, index) => const Divider(height: 1),

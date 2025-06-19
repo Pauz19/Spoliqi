@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../providers/playlist_provider.dart';
@@ -34,27 +35,28 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return AlertDialog(
           backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
-          title: Text('Tạo playlist mới', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+          title: Text(tr('create_playlist'), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
           content: TextField(
             controller: controller,
             autofocus: true,
             decoration: InputDecoration(
-              hintText: 'Nhập tên playlist...',
+              hintText: tr('playlist_name_hint'),
               hintStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
             ),
             style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
           ),
           actions: [
             TextButton(
-              child: Text('Hủy', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
+              child: Text(tr('cancel'), style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
               onPressed: () => Navigator.pop(context),
             ),
             TextButton(
-              child: Text('Tạo', style: TextStyle(color: Colors.greenAccent)),
+              child: Text(tr('create'), style: TextStyle(color: Colors.greenAccent)),
               onPressed: () async {
                 final name = controller.text.trim();
                 if (name.isNotEmpty) {
-                  await Provider.of<PlaylistProvider>(context, listen: false).addPlaylist(name);
+                  // TRUYỀN context vào để có notification
+                  await Provider.of<PlaylistProvider>(context, listen: false).addPlaylist(name, context: context);
                   if (context.mounted) Navigator.pop(context);
                 }
               },
@@ -87,7 +89,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
       if (Navigator.canPop(context)) Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bài này không hỗ trợ preview 30s!')),
+        SnackBar(content: Text(tr('preview_not_supported'))),
       );
     }
   }
@@ -104,7 +106,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
           .setQueue(playableQueue, startIndex: 0);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không có bài nào hỗ trợ preview 30s!')),
+        SnackBar(content: Text(tr('no_preview_supported'))),
       );
     }
   }
@@ -121,7 +123,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
       Provider.of<PlayerProvider>(context, listen: false).setQueue(newQueue, startIndex: 0);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không có bài nào hỗ trợ preview 30s!')),
+        SnackBar(content: Text(tr('no_preview_supported'))),
       );
     }
   }
@@ -134,31 +136,32 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return AlertDialog(
           backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
-          title: Text('Đổi tên playlist', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+          title: Text(tr('rename_playlist'), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
           content: TextField(
             controller: controller,
             autofocus: true,
             style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
             decoration: InputDecoration(
-              hintText: 'Nhập tên mới...',
+              hintText: tr('new_playlist_name_hint'),
               hintStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Hủy', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
+              child: Text(tr('cancel'), style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
             ),
             TextButton(
               onPressed: () async {
                 final newName = controller.text.trim();
                 if (newName.isNotEmpty) {
+                  // TRUYỀN context vào để có notification
                   await Provider.of<PlaylistProvider>(context, listen: false)
-                      .renamePlaylist(playlist.id, newName);
+                      .renamePlaylist(playlist.id, newName, context: context);
                   if (context.mounted) Navigator.pop(context);
                 }
               },
-              child: Text('Lưu', style: TextStyle(color: Colors.greenAccent)),
+              child: Text(tr('save'), style: TextStyle(color: Colors.greenAccent)),
             ),
           ],
         );
@@ -185,7 +188,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
           appBar: AppBar(
             backgroundColor: backgroundColor,
             title: Text(
-              'Playlist của bạn',
+              tr('your_playlists'),
               style: TextStyle(fontWeight: FontWeight.bold, color: mainTextColor),
             ),
             elevation: 0,
@@ -193,7 +196,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
             actions: [
               IconButton(
                 icon: Icon(Icons.add, color: iconColor),
-                tooltip: 'Tạo playlist mới',
+                tooltip: tr('create_playlist'),
                 onPressed: () => _showCreatePlaylistDialog(context),
               ),
             ],
@@ -242,7 +245,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Nhạc đã thích',
+                                  tr('liked_songs'),
                                   style: TextStyle(
                                     color: mainTextColor,
                                     fontSize: 19,
@@ -251,7 +254,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Toàn bộ bài hát bạn đã thích',
+                                  tr('all_liked_songs'),
                                   style: TextStyle(
                                     color: subTextColor,
                                     fontSize: 13,
@@ -262,7 +265,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                           ),
                           IconButton(
                             icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
-                            tooltip: "Phát tất cả",
+                            tooltip: tr('play_all'),
                             onPressed: likedSongs.isEmpty
                                 ? null
                                 : () => playAllLikedSongs(context, likedSongs),
@@ -363,7 +366,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '$songCount bài hát',
+                                tr('song_count', args: ['$songCount']),
                                 style: TextStyle(
                                   color: subTextColor,
                                   fontSize: 13,
@@ -374,7 +377,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                         ),
                         IconButton(
                           icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
-                          tooltip: "Phát tất cả",
+                          tooltip: tr('play_all'),
                           onPressed: playlist.songs.isEmpty
                               ? null
                               : () => playAllWithFreshPreview(playlist.songs, context),
@@ -468,7 +471,7 @@ class _PlaylistDetailSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '$songCount bài hát',
+                        tr('song_count', args: ['$songCount']),
                         style: TextStyle(color: subTextColor, fontSize: 14),
                       ),
                     ],
@@ -476,7 +479,7 @@ class _PlaylistDetailSheet extends StatelessWidget {
                 ),
                 IconButton(
                   icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 38),
-                  tooltip: "Phát tất cả",
+                  tooltip: tr('play_all'),
                   onPressed: playlist.songs.isEmpty
                       ? null
                       : () => playAllWithFreshPreview(playlist.songs, context),
@@ -491,7 +494,7 @@ class _PlaylistDetailSheet extends StatelessWidget {
                   Icon(Icons.music_off, size: 54, color: subTextColor.withOpacity(0.3)),
                   const SizedBox(height: 10),
                   Text(
-                    'Playlist rỗng',
+                    tr('playlist_empty'),
                     style: TextStyle(color: subTextColor, fontSize: 16),
                   ),
                   const SizedBox(height: 20),
@@ -516,8 +519,9 @@ class _PlaylistDetailSheet extends StatelessWidget {
                         child: const Icon(Icons.delete, color: Colors.white),
                       ),
                       onDismissed: (_) async {
+                        // TRUYỀN context vào để có notification
                         await Provider.of<PlaylistProvider>(context, listen: false)
-                            .removeSongFromPlaylist(playlist.id, song);
+                            .removeSongFromPlaylist(playlist.id, song, context: context);
                       },
                       child: GestureDetector(
                         onLongPress: () {
@@ -561,21 +565,21 @@ class _PlaylistDetailSheet extends StatelessWidget {
                               ),
                               if (song.album != null && song.album!.isNotEmpty)
                                 Text(
-                                  'Album: ${song.album}',
+                                  '${tr('album')}: ${song.album}',
                                   style: TextStyle(color: subTextColor.withOpacity(0.7), fontSize: 12),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               if (song.duration != null)
                                 Text(
-                                  'Thời lượng: ${song.duration}',
+                                  '${tr('duration')}: ${song.duration}',
                                   style: TextStyle(color: subTextColor.withOpacity(0.7), fontSize: 12),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               if (song.releaseDate != null && song.releaseDate!.isNotEmpty)
                                 Text(
-                                  'Phát hành: ${song.releaseDate}',
+                                  '${tr('release_date')}: ${song.releaseDate}',
                                   style: TextStyle(color: subTextColor.withOpacity(0.7), fontSize: 12),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -586,8 +590,9 @@ class _PlaylistDetailSheet extends StatelessWidget {
                             color: isDark ? Colors.grey[900] : Colors.grey[200],
                             onSelected: (value) async {
                               if (value == 'remove') {
+                                // TRUYỀN context vào để có notification
                                 await Provider.of<PlaylistProvider>(context, listen: false)
-                                    .removeSongFromPlaylist(playlist.id, song);
+                                    .removeSongFromPlaylist(playlist.id, song, context: context);
                               }
                             },
                             itemBuilder: (context) => [
@@ -597,7 +602,7 @@ class _PlaylistDetailSheet extends StatelessWidget {
                                   children: [
                                     Icon(Icons.delete_outline, color: Colors.red, size: 20),
                                     const SizedBox(width: 10),
-                                    Text('Xoá khỏi playlist', style: TextStyle(color: mainTextColor)),
+                                    Text(tr('remove_from_playlist'), style: TextStyle(color: mainTextColor)),
                                   ],
                                 ),
                               ),
@@ -637,7 +642,7 @@ class _PlaylistOptionsMenu extends StatelessWidget {
         children: [
           ListTile(
             leading: Icon(Icons.edit, color: iconColor),
-            title: Text('Đổi tên playlist', style: TextStyle(color: mainTextColor)),
+            title: Text(tr('rename_playlist'), style: TextStyle(color: mainTextColor)),
             onTap: () {
               Navigator.pop(context);
               if (onRename != null) onRename!();
@@ -645,10 +650,11 @@ class _PlaylistOptionsMenu extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text('Xoá playlist', style: TextStyle(color: Colors.red)),
+            title: Text(tr('delete_playlist'), style: const TextStyle(color: Colors.red)),
             onTap: () async {
+              // TRUYỀN context vào để có notification
               await Provider.of<PlaylistProvider>(context, listen: false)
-                  .removePlaylist(playlist.id);
+                  .removePlaylist(playlist.id, context: context);
               Navigator.pop(context);
             },
           ),

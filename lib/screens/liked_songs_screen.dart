@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../providers/liked_songs_provider.dart';
 import '../models/song.dart';
 import '../providers/player_provider.dart';
@@ -40,7 +41,7 @@ class LikedSongsScreen extends StatelessWidget {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bài này không hỗ trợ preview 30s!')),
+        SnackBar(content: Text(tr('preview_not_supported'))),
       );
     }
   }
@@ -65,7 +66,7 @@ class LikedSongsScreen extends StatelessWidget {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không có bài nào hỗ trợ preview 30s!')),
+        SnackBar(content: Text(tr('no_preview_supported'))),
       );
     }
   }
@@ -79,7 +80,7 @@ class LikedSongsScreen extends StatelessWidget {
       return Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(
-          title: const Text('Nhạc đã thích'),
+          title: Text('liked_songs'.tr()),
           backgroundColor: Colors.black,
           elevation: 0,
         ),
@@ -89,9 +90,9 @@ class LikedSongsScreen extends StatelessWidget {
             children: [
               Icon(Icons.favorite_border, size: 80, color: Colors.white24),
               const SizedBox(height: 22),
-              const Text(
-                'Chưa có bài hát nào đã thích',
-                style: TextStyle(
+              Text(
+                tr('no_liked_songs'),
+                style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -100,19 +101,19 @@ class LikedSongsScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
-              const Text(
-                'Hãy nhấn vào biểu tượng ',
-                style: TextStyle(color: Colors.white38, fontSize: 15),
+              Text(
+                tr('like_instruction'),
+                style: const TextStyle(color: Colors.white38, fontSize: 15),
                 textAlign: TextAlign.center,
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.favorite, color: Color(0xFF1DB954), size: 18),
-                  SizedBox(width: 4),
+                children: [
+                  const Icon(Icons.favorite, color: Color(0xFF1DB954), size: 18),
+                  const SizedBox(width: 4),
                   Text(
-                    'ở mỗi bài hát để thêm vào đây.',
-                    style: TextStyle(color: Colors.white38, fontSize: 15),
+                    tr('like_instruction_2'),
+                    style: const TextStyle(color: Colors.white38, fontSize: 15),
                   ),
                 ],
               ),
@@ -125,13 +126,13 @@ class LikedSongsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Nhạc đã thích'),
+        title: Text('liked_songs'.tr()),
         backgroundColor: Colors.black,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.play_circle_fill, color: Color(0xFF1DB954), size: 33),
-            tooltip: "Phát tất cả",
+            tooltip: tr('play_all'),
             onPressed: likedSongs.isEmpty
                 ? null
                 : () => playAllWithFreshPreview(likedSongs, context),
@@ -169,13 +170,13 @@ class LikedSongsScreen extends StatelessWidget {
             subtitle: Text(song.artist, style: const TextStyle(color: Colors.white54)),
             trailing: IconButton(
               icon: const Icon(Icons.favorite, color: Color(0xFF1DB954)),
-              tooltip: "Bỏ thích",
+              tooltip: tr('unlike'),
               onPressed: () async {
                 await context.read<LikedSongsProvider>().unlikeSong(song);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Đã xóa khỏi Nhạc đã thích'),
-                    duration: Duration(seconds: 2),
+                  SnackBar(
+                    content: Text(tr('removed_from_liked')),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               },

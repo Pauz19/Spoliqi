@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -26,40 +27,41 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  String mapAuthErrorToVietnamese(String? errorMessage) {
-    if (errorMessage == null) return 'Lỗi không xác định. Vui lòng thử lại!';
+  String mapAuthError(String? errorMessage) {
+    // You can expand this map for more detailed localization support
+    if (errorMessage == null) return tr('auth.unknown_error');
     errorMessage = errorMessage.toLowerCase();
     if (errorMessage.contains('badly formatted')) {
-      return 'Email không hợp lệ. Vui lòng kiểm tra lại địa chỉ email.';
+      return tr('auth.invalid_email');
     }
     if (errorMessage.contains('no user record')) {
-      return 'Không tìm thấy tài khoản với email này.';
+      return tr('auth.no_user');
     }
     if (errorMessage.contains('password is invalid') ||
         errorMessage.contains('invalid password')) {
-      return 'Sai mật khẩu. Vui lòng thử lại.';
+      return tr('auth.invalid_password');
     }
     if (errorMessage.contains('user not found')) {
-      return 'Tài khoản không tồn tại.';
+      return tr('auth.no_user');
     }
     if (errorMessage.contains('the supplied auth credential is incorrect') ||
         errorMessage.contains('malformed or has expired')) {
-      return 'Đăng nhập không thành công. Vui lòng kiểm tra lại email/mật khẩu hoặc thử đăng nhập lại.';
+      return tr('auth.login_failed');
     }
     if (errorMessage.contains('too many unsuccessful login attempts')) {
-      return 'Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.';
+      return tr('auth.too_many_attempts');
     }
     if (errorMessage.contains('user disabled')) {
-      return 'Tài khoản đã bị khóa.';
+      return tr('auth.user_disabled');
     }
     if (errorMessage.contains('network error')) {
-      return 'Lỗi mạng. Vui lòng kiểm tra kết nối Internet.';
+      return tr('auth.network_error');
     }
     if (errorMessage.contains('blocked all requests from this device')) {
-      return 'Thiết bị này đã bị chặn. Vui lòng thử lại sau.';
+      return tr('auth.blocked_device');
     }
     if (errorMessage.contains('email already in use')) {
-      return 'Email này đã được sử dụng.';
+      return tr('auth.email_in_use');
     }
     return errorMessage; // fallback
   }
@@ -81,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
         await FirebaseAuth.instance.signOut();
         if (!mounted) return;
         setState(() {
-          errorText = 'Bạn cần xác thực email trước khi đăng nhập. Vui lòng kiểm tra hộp thư và xác thực!';
+          errorText = tr('auth.verify_email');
           canResendEmail = true;
         });
         return;
@@ -90,12 +92,12 @@ class _LoginPageState extends State<LoginPage> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {
-        errorText = mapAuthErrorToVietnamese(e.message);
+        errorText = mapAuthError(e.message);
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        errorText = 'Lỗi không xác định. Vui lòng thử lại!';
+        errorText = tr('auth.unknown_error');
       });
     } finally {
       if (!mounted) return;
@@ -130,12 +132,12 @@ class _LoginPageState extends State<LoginPage> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {
-        errorText = mapAuthErrorToVietnamese(e.message);
+        errorText = mapAuthError(e.message);
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        errorText = 'Lỗi đăng nhập Google.';
+        errorText = tr('auth.google_login_error');
       });
     } finally {
       if (!mounted) return;
@@ -158,12 +160,12 @@ class _LoginPageState extends State<LoginPage> {
         canResendEmail = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã gửi lại email xác thực!')),
+        SnackBar(content: Text(tr('auth.email_sent'))),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        errorText = 'Không thể gửi lại email xác thực. Hãy kiểm tra lại thông tin đăng nhập hoặc thử lại sau.';
+        errorText = tr('auth.resend_failed');
       });
     }
   }
@@ -181,133 +183,179 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  void _changeLanguage(Locale locale) {
+    context.setLocale(locale);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.music_note, color: Colors.greenAccent, size: 60),
-              const SizedBox(height: 16),
-              const Text(
-                'Đăng nhập Spotify Clone',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 26,
-                  letterSpacing: 0.5,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.music_note, color: Colors.greenAccent, size: 60),
+                    const SizedBox(height: 16),
+                    Text(
+                      tr('login.title'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 26,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    TextField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.email, color: Colors.greenAccent),
+                        hintText: tr('login.email_hint'),
+                        hintStyle: const TextStyle(color: Colors.white54),
+                        filled: true,
+                        fillColor: Colors.white12,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    TextField(
+                      controller: passwordController,
+                      obscureText: true,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.lock, color: Colors.greenAccent),
+                        hintText: tr('login.password_hint'),
+                        hintStyle: const TextStyle(color: Colors.white54),
+                        filled: true,
+                        fillColor: Colors.white12,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    // Nút Quên mật khẩu
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: isLoading ? null : _showForgotPasswordDialog,
+                        child: Text(
+                          tr('login.forgot_password'),
+                          style: const TextStyle(color: Color(0xFF1DB954)),
+                        ),
+                      ),
+                    ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        errorText!,
+                        style: const TextStyle(color: Colors.redAccent),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                    if (canResendEmail)
+                      TextButton(
+                        onPressed: isLoading ? null : _resendVerifyEmail,
+                        child: Text(
+                          tr('login.resend_verify_email'),
+                          style: const TextStyle(color: Colors.greenAccent),
+                        ),
+                      ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.greenAccent,
+                          foregroundColor: Colors.black87,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: isLoading ? null : _login,
+                        child: isLoading
+                            ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 3, color: Colors.black87),
+                        )
+                            : Text(tr('login.login_button'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.greenAccent,
+                          side: const BorderSide(color: Colors.greenAccent, width: 1.2),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: Image.asset('assets/google_logo.png', width: 24, height: 24),
+                        label: Text(tr('login.with_google'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        onPressed: isLoading ? null : _loginWithGoogle,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    TextButton(
+                      onPressed: _goToRegister,
+                      child: Text(tr('login.register_link'),
+                          style: const TextStyle(color: Colors.greenAccent)),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 32),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.email, color: Colors.greenAccent),
-                  hintText: 'Email',
-                  hintStyle: const TextStyle(color: Colors.white54),
-                  filled: true,
-                  fillColor: Colors.white12,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
+            ),
+            // Language picker at top right
+            Positioned(
+              right: 16,
+              top: 12,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white24),
                 ),
-              ),
-              const SizedBox(height: 18),
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.lock, color: Colors.greenAccent),
-                  hintText: 'Mật khẩu',
-                  hintStyle: const TextStyle(color: Colors.white54),
-                  filled: true,
-                  fillColor: Colors.white12,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              // Nút Quên mật khẩu
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: isLoading ? null : _showForgotPasswordDialog,
-                  child: const Text(
-                    'Quên mật khẩu?',
-                    style: TextStyle(color: Color(0xFF1DB954)),
-                  ),
-                ),
-              ),
-              if (errorText != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  errorText!,
-                  style: const TextStyle(color: Colors.redAccent),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-              if (canResendEmail)
-                TextButton(
-                  onPressed: isLoading ? null : _resendVerifyEmail,
-                  child: const Text(
-                    'Gửi lại email xác thực',
-                    style: TextStyle(color: Colors.greenAccent),
-                  ),
-                ),
-              const SizedBox(height: 28),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.greenAccent,
-                    foregroundColor: Colors.black87,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<Locale>(
+                      value: context.locale,
+                      dropdownColor: Colors.black,
+                      style: const TextStyle(color: Colors.white),
+                      iconEnabledColor: Colors.greenAccent,
+                      items: [
+                        DropdownMenuItem(
+                          value: const Locale('en'),
+                          child: const Text('English', style: TextStyle(color: Colors.white)),
+                        ),
+                        DropdownMenuItem(
+                          value: const Locale('vi'),
+                          child: const Text('Tiếng Việt', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                      onChanged: (locale) {
+                        if (locale != null) _changeLanguage(locale);
+                      },
                     ),
                   ),
-                  onPressed: isLoading ? null : _login,
-                  child: isLoading
-                      ? const SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(strokeWidth: 3, color: Colors.black87),
-                  )
-                      : const Text('Đăng nhập', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.greenAccent,
-                    side: const BorderSide(color: Colors.greenAccent, width: 1.2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  icon: Image.asset('assets/google_logo.png', width: 24, height: 24),
-                  label: const Text('Đăng nhập với Google', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  onPressed: isLoading ? null : _loginWithGoogle,
-                ),
-              ),
-              const SizedBox(height: 18),
-              TextButton(
-                onPressed: _goToRegister,
-                child: const Text('Bạn chưa có tài khoản? Đăng ký',
-                    style: TextStyle(color: Colors.greenAccent)),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -328,17 +376,17 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
   String? _error;
   String? _success;
 
-  String mapAuthErrorToVietnamese(String? errorMessage) {
-    if (errorMessage == null) return "Có lỗi xảy ra!";
+  String mapAuthError(String? errorMessage) {
+    if (errorMessage == null) return tr("auth.unknown_error");
     errorMessage = errorMessage.toLowerCase();
     if (errorMessage.contains('badly formatted')) {
-      return 'Email không hợp lệ. Vui lòng kiểm tra lại địa chỉ email.';
+      return tr('auth.invalid_email');
     }
     if (errorMessage.contains('user not found')) {
-      return 'Không tìm thấy tài khoản với email này.';
+      return tr('auth.no_user');
     }
     if (errorMessage.contains('network error')) {
-      return 'Lỗi mạng. Vui lòng kiểm tra kết nối Internet.';
+      return tr('auth.network_error');
     }
     return errorMessage;
   }
@@ -353,15 +401,15 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
       await FirebaseAuth.instance
           .sendPasswordResetEmail(email: _emailController.text.trim());
       setState(() {
-        _success = "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư.";
+        _success = tr("auth.reset_mail_sent");
       });
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _error = mapAuthErrorToVietnamese(e.message);
+        _error = mapAuthError(e.message);
       });
     } catch (e) {
       setState(() {
-        _error = "Có lỗi xảy ra!";
+        _error = tr("auth.unknown_error");
       });
     } finally {
       setState(() {
@@ -373,23 +421,23 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Đặt lại mật khẩu'),
+      title: Text(tr('login.forgot_password_title')),
       content: SizedBox(
         width: 350,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Nhập email bạn đã đăng ký để nhận hướng dẫn đặt lại mật khẩu.',
-              style: TextStyle(fontSize: 14),
+            Text(
+              tr('login.forgot_password_text'),
+              style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 15),
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: tr('login.email_hint'),
+                border: const OutlineInputBorder(),
               ),
               autofocus: true,
             ),
@@ -415,7 +463,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text('Đóng'),
+          child: Text(tr('close')),
         ),
         TextButton(
           onPressed: _isLoading ? null : _sendResetEmail,
@@ -425,7 +473,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
             height: 20,
             child: CircularProgressIndicator(strokeWidth: 2),
           )
-              : const Text('Gửi email'),
+              : Text(tr('login.send_email')),
         ),
       ],
     );

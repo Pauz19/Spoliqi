@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class TrackListTile extends StatelessWidget {
   final dynamic track;
@@ -9,8 +10,8 @@ class TrackListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String title = track['title'] ?? 'Không rõ tên';
-    final String artist = track['artist']?['name'] ?? 'Không rõ nghệ sĩ';
+    final String title = track['title'] ?? tr('unknown_title');
+    final String artist = track['artist']?['name'] ?? tr('unknown_artist');
     final String? coverUrl = track['album']?['cover_big'];
 
     return Card(

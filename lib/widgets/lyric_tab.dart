@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../services/lyric_service.dart';
 
 class LyricTab extends StatefulWidget {
@@ -78,11 +79,11 @@ class _LyricTabState extends State<LyricTab> with SingleTickerProviderStateMixin
             return Center(child: CircularProgressIndicator(color: accentColor));
           }
           if (snapshot.hasError) {
-            return _buildError("Có lỗi khi tải lyric.\nVui lòng thử lại sau.", subTextColor);
+            return _buildError(tr('lyric_error'), subTextColor);
           }
           final lyric = snapshot.data;
           if (lyric == null || lyric.trim().isEmpty) {
-            return _buildError("Không tìm thấy lyric cho bài hát này.", subTextColor);
+            return _buildError(tr('lyric_not_found'), subTextColor);
           }
           _fadeController.forward();
 

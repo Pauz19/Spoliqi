@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../providers/player_provider.dart';
 import '../models/song.dart';
 
@@ -14,16 +15,16 @@ class QueueScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Danh sách chờ', style: TextStyle(color: Colors.white)),
+        title: Text('queue'.tr(), style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       backgroundColor: Colors.black,
       body: queue.isEmpty
-          ? const Center(
+          ? Center(
         child: Text(
-          'Danh sách chờ trống',
-          style: TextStyle(color: Colors.white54, fontSize: 16),
+          'queue_empty'.tr(),
+          style: const TextStyle(color: Colors.white54, fontSize: 16),
         ),
       )
           : ReorderableListView.builder(
@@ -82,7 +83,7 @@ class QueueScreen extends StatelessWidget {
               onPressed: () {
                 Provider.of<PlayerProvider>(context, listen: false).removeFromQueue(song);
               },
-              tooltip: 'Xóa khỏi danh sách chờ',
+              tooltip: 'remove_from_queue'.tr(),
             ),
             selected: isCurrent,
             onTap: () {

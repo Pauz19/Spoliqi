@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/search_screen.dart';
@@ -13,11 +14,14 @@ import 'providers/player_provider.dart';
 import 'providers/playlist_provider.dart';
 import 'providers/liked_songs_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/notification_provider.dart'; // Thêm dòng này
+import 'widgets/notification_dialog.dart'; // Thêm dòng này
 import 'screens/playlist_screen.dart';
 import 'login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
   await Firebase.initializeApp(
     options: const FirebaseOptions(
       apiKey: 'AIzaSyAh4yK2BVohuBnOlv3v9B3vcJ8pU6zTK5k',
@@ -28,7 +32,14 @@ void main() async {
       databaseURL: 'https://spoliqi-default-rtdb.asia-southeast1.firebasedatabase.app',
     ),
   );
-  runApp(const SpotifyCloneApp());
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [Locale('vi'), Locale('en')],
+      path: 'assets/lang',
+      fallbackLocale: const Locale('vi'),
+      child: const SpotifyCloneApp(),
+    ),
+  );
 }
 
 /// Widget lắng nghe trạng thái mạng và show thông báo mất/kết nối lại
@@ -65,8 +76,8 @@ class _NetworkStatusListenerState extends State<NetworkStatusListener> {
 
   void _showSnackbar({required bool disconnected}) {
     final mess = disconnected
-        ? 'Mất kết nối mạng. Một số chức năng sẽ bị hạn chế.'
-        : 'Đã kết nối lại Internet!';
+        ? tr('network_disconnected')
+        : tr('network_connected');
     final color = disconnected ? Colors.red : Colors.green;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -116,6 +127,7 @@ class SpotifyCloneApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PlaylistProvider()),
         ChangeNotifierProvider(create: (_) => LikedSongsProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()), // Thêm dòng này
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -198,6 +210,9 @@ class SpotifyCloneApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             home: const RootScreen(),
             builder: (context, child) => NetworkStatusListener(child: child!),
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale: context.locale,
           );
         },
       ),
@@ -278,6 +293,27 @@ class _MainWrapperState extends State<MainWrapper> {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          _selectedIndex == 0
+              ? tr('home')
+              : _selectedIndex == 1
+              ? tr('search')
+              : tr('playlist'),
+        ),
+        actions: [
+          // Nút notification
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => const NotificationDialog(),
+              );
+            },
+          ),
+        ],
+      ),
       body: Stack(
         children: [
           _screens[_selectedIndex],
@@ -295,18 +331,18 @@ class _MainWrapperState extends State<MainWrapper> {
         selectedItemColor: Colors.greenAccent,
         unselectedItemColor: isDark ? Colors.white54 : Colors.black38,
         currentIndex: _selectedIndex,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Trang chủ',
+            icon: const Icon(Icons.home),
+            label: tr('home'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Tìm kiếm',
+            icon: const Icon(Icons.search),
+            label: tr('search'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.playlist_play),
-            label: 'Playlist',
+            icon: const Icon(Icons.playlist_play),
+            label: tr('playlist'),
           ),
         ],
         onTap: (index) {

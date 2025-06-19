@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class NetworkStatusListener extends StatefulWidget {
   final Widget child;
@@ -35,8 +36,8 @@ class _NetworkStatusListenerState extends State<NetworkStatusListener> {
 
   void _showSnackbar({required bool disconnected}) {
     final mess = disconnected
-        ? 'Mất kết nối mạng. Một số chức năng sẽ bị hạn chế.'
-        : 'Đã kết nối lại Internet!';
+        ? tr('network_disconnected')
+        : tr('network_connected');
     final color = disconnected ? Colors.red : Colors.green;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
