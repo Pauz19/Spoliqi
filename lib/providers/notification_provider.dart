@@ -8,6 +8,7 @@ class NotificationProvider extends ChangeNotifier {
 
   /// Thêm một thông báo với key đa ngôn ngữ và arguments
   void addNotificationKey(String key, {List<String> args = const []}) {
+    print('Add notification: key=$key, args=$args');
     _notifications.insert(
       0,
       AppNotification(

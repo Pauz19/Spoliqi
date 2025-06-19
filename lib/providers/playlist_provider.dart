@@ -187,10 +187,7 @@ class PlaylistProvider extends ChangeNotifier {
 
     // Thêm notification
     if (context != null) {
-      context.read<NotificationProvider>().addNotificationKey(
-        'playlist_renamed',
-        args: [oldName, newName],
-      );
+      context.read<NotificationProvider>().addNotificationKey('playlist_renamed', args: [oldName, newName]);
     }
   }
 }

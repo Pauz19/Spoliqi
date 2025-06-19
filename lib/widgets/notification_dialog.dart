@@ -3,6 +3,17 @@ import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../providers/notification_provider.dart';
 
+// Hàm format thủ công các biến {0}, %1$s, $args{0}
+String manualFormat(String template, List<String> args) {
+  var result = template;
+  for (var i = 0; i < args.length; i++) {
+    result = result.replaceAll('{$i}', args[i]);
+    result = result.replaceAll('%${i + 1}\$s', args[i]);
+    result = result.replaceAll('\$args{$i}', args[i]);
+  }
+  return result;
+}
+
 class NotificationDialog extends StatelessWidget {
   const NotificationDialog({super.key});
 
@@ -28,9 +39,11 @@ class NotificationDialog extends StatelessWidget {
 
             String message;
             if (n.key.isNotEmpty) {
-              // Đảm bảo args là List<String>
               final List<String> args = n.args.map((e) => e.toString()).toList();
-              message = tr(n.key, args: args);
+              print('Render notification: key=${n.key}, args=$args');
+              final template = tr(n.key); // Không truyền args nữa!
+              message = manualFormat(template, args);
+              print('TR: key=${n.key}, args=$args, result=$message');
             } else {
               message = n.legacyMessage ?? "";
             }

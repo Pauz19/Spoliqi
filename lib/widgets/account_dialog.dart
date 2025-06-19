@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../providers/playlist_provider.dart';
 
 class AccountDialog extends StatelessWidget {
   final User? user;
@@ -16,14 +14,6 @@ class AccountDialog extends StatelessWidget {
     final email = user!.email ?? '';
     final photoUrl = user!.photoURL;
     final uid = user!.uid;
-
-    // Lấy số playlist nếu có sử dụng PlaylistProvider
-    int? playlistCount;
-    try {
-      playlistCount = context.watch<PlaylistProvider>().playlists.length;
-    } catch (_) {
-      playlistCount = null;
-    }
 
     return AlertDialog(
       backgroundColor: Colors.grey[900],
@@ -95,23 +85,7 @@ class AccountDialog extends StatelessWidget {
           ],
         ),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (playlistCount != null)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.queue_music, color: Colors.greenAccent[100], size: 20),
-                const SizedBox(width: 4),
-                Text(
-                  tr('playlist_created_count', args: ['$playlistCount']),
-                  style: const TextStyle(color: Colors.white70, fontSize: 15),
-                ),
-              ],
-            ),
-        ],
-      ),
+      content: const SizedBox.shrink(),
       actionsAlignment: MainAxisAlignment.spaceBetween,
       actions: [
         TextButton(

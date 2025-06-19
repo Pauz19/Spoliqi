@@ -13,15 +13,19 @@ import 'settings_page.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../widgets/notification_dialog.dart'; // --- Thêm dòng này nếu chưa có
+import '../widgets/notification_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  static HomeScreenState? of(BuildContext context) =>
+      context.findAncestorStateOfType<HomeScreenState>();
+
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   final DeezerService _deezerService = DeezerService();
   late Future<List<dynamic>> _tracksFuture;
   late Future<List<dynamic>> _vpopFuture;
@@ -33,6 +37,15 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isSearching = false;
   bool isLoadingSearch = false;
   String? searchError;
+
+  /// Hàm manualFormat để thay thế {0}, {1}, ... trong chuỗi template bằng args tương ứng
+  String manualFormat(String template, List<String> args) {
+    var result = template;
+    for (var i = 0; i < args.length; i++) {
+      result = result.replaceAll('{$i}', args[i]);
+    }
+    return result;
+  }
 
   @override
   void initState() {
@@ -59,6 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _isRefreshing = false;
     });
   }
+
+  Future<void> refresh() => _refresh();
 
   Future<void> _onSearch() async {
     final keyword = _searchController.text.trim();
@@ -119,10 +134,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (previewUrl != null && previewUrl.isNotEmpty) {
       final song = Song(
         id: track['id'].toString(),
-        title: track['title'] ?? tr('unknown_title'),
-        artist: track['artist']?['name'] ?? tr('unknown_artist'),
+        title: track['title']?.toString() ?? tr('unknown_title'),
+        artist: track['artist']?['name']?.toString() ?? tr('unknown_artist'),
         audioUrl: previewUrl,
-        coverUrl: track['album']?['cover_big'] ?? '',
+        coverUrl: track['album']?['cover_big']?.toString() ?? '',
       );
       Provider.of<PlayerProvider>(context, listen: false)
           .setQueue([song], startIndex: 0);
@@ -143,19 +158,32 @@ class _HomeScreenState extends State<HomeScreen> {
     final previewUrl = await fetchPreviewUrl(track['id'].toString());
     final song = Song(
       id: track['id'].toString(),
-      title: track['title'] ?? tr('unknown_title'),
-      artist: track['artist']?['name'] ?? tr('unknown_artist'),
+      title: track['title']?.toString() ?? tr('unknown_title'),
+      artist: track['artist']?['name']?.toString() ?? tr('unknown_artist'),
       audioUrl: previewUrl ?? '',
-      coverUrl: track['album']?['cover_big'] ?? '',
+      coverUrl: track['album']?['cover_big']?.toString() ?? '',
     );
     showSongOptions(context, song);
+  }
+
+  /// Hàm xác định key lời chào theo giờ
+  String getGreetingKey() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return 'greeting_morning';    // Sáng
+    } else if (hour >= 12 && hour < 18) {
+      return 'greeting_afternoon';  // Chiều
+    } else if (hour >= 18 && hour < 22) {
+      return 'greeting_evening';    // Tối
+    } else {
+      return 'greeting_night';      // Đêm
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final userName = user?.displayName ?? user?.email ?? tr('user');
-    final avatarUrl = user?.photoURL;
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -169,63 +197,23 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // Chỉ còn lời chào, không còn avatar nữa
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => AccountDialog(user: user),
-                      );
-                    },
-                    child: CircleAvatar(
-                      radius: 22,
-                      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                      child: avatarUrl == null ? Icon(Icons.person, color: iconColor) : null,
-                      backgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: Icon(Icons.notifications_none, color: iconColor, size: 28),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => const NotificationDialog(),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.settings, color: iconColor, size: 28),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SettingsPage()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 0),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 18, bottom: 0),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  tr('good_morning', args: [userName]),
+                  manualFormat(tr(getGreetingKey()), [userName]),
                   style: TextStyle(
-                    fontSize: 29,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: mainTextColor,
                     letterSpacing: 0.5,
                   ),
+                  maxLines: 2,
                 ),
               ),
             ),
-            // ===== ĐÃ BỎ nút Nhạc đã thích ở đây =====
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               child: Row(
@@ -470,13 +458,13 @@ class _HomeScreenState extends State<HomeScreen> {
         final track = searchResults[index];
         final song = Song(
           id: track['id'].toString(),
-          title: track['title'] ?? tr('unknown_title'),
-          artist: track['artist']?['name'] ?? tr('unknown_artist'),
-          audioUrl: track['preview'] ?? '',
-          coverUrl: track['album']?['cover_big'] ?? '',
+          title: track['title']?.toString() ?? tr('unknown_title'),
+          artist: track['artist']?['name']?.toString() ?? tr('unknown_artist'),
+          audioUrl: track['preview']?.toString() ?? '',
+          coverUrl: track['album']?['cover_big']?.toString() ?? '',
         );
         return ListTile(
-          leading: track['album']?['cover_medium'] != null
+          leading: (track['album']?['cover_medium']?.toString().isNotEmpty ?? false)
               ? ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: Image.network(
@@ -507,7 +495,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// Card cho playlist section
 class _VpopSongCard extends StatelessWidget {
   final dynamic track;
   final VoidCallback? onTap;
@@ -529,9 +516,9 @@ class _VpopSongCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String title = track['title'] ?? tr('unknown_title');
-    final String artist = track['artist']?['name'] ?? tr('unknown_artist');
-    final String? coverUrl = track['album']?['cover_medium'];
+    final String title = track['title']?.toString() ?? tr('unknown_title');
+    final String artist = track['artist']?['name']?.toString() ?? tr('unknown_artist');
+    final String? coverUrl = track['album']?['cover_medium']?.toString();
 
     return InkWell(
       onTap: onTap,
@@ -578,7 +565,6 @@ class _VpopSongCard extends StatelessWidget {
   }
 }
 
-// 2-cột playlist tile Spotify style
 class _SpotifyPlaylistTile extends StatelessWidget {
   final dynamic track;
   final VoidCallback? onTap;
@@ -598,9 +584,9 @@ class _SpotifyPlaylistTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String title = track['title'] ?? tr('unknown_title');
-    final String artist = track['artist']?['name'] ?? tr('unknown_artist');
-    final String? coverUrl = track['album']?['cover_small'];
+    final String title = track['title']?.toString() ?? tr('unknown_title');
+    final String artist = track['artist']?['name']?.toString() ?? tr('unknown_artist');
+    final String? coverUrl = track['album']?['cover_small']?.toString();
 
     final bgColors = [
       Colors.green.shade700,
@@ -644,7 +630,10 @@ class _SpotifyPlaylistTile extends StatelessWidget {
               child: Text(
                 title,
                 style: TextStyle(
-                    color: mainTextColor, fontWeight: FontWeight.bold, fontSize: 15),
+                  color: mainTextColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -657,7 +646,6 @@ class _SpotifyPlaylistTile extends StatelessWidget {
   }
 }
 
-// Card dọc cho horizontal list
 class _SpotifyCardVertical extends StatelessWidget {
   final dynamic track;
   final VoidCallback? onTap;
@@ -679,9 +667,9 @@ class _SpotifyCardVertical extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String title = track['title'] ?? tr('unknown_title');
-    final String artist = track['artist']?['name'] ?? tr('unknown_artist');
-    final String? coverUrl = track['album']?['cover_medium'];
+    final String title = track['title']?.toString() ?? tr('unknown_title');
+    final String artist = track['artist']?['name']?.toString() ?? tr('unknown_artist');
+    final String? coverUrl = track['album']?['cover_medium']?.toString();
 
     return InkWell(
       onTap: onTap,

@@ -11,6 +11,17 @@ import '../models/song.dart';
 import '../widgets/song_options.dart';
 import '../screens/liked_songs_screen.dart';
 
+// Hàm format thủ công các biến {0}, %1$s, $args{0}
+String manualFormat(String template, List<String> args) {
+  var result = template;
+  for (var i = 0; i < args.length; i++) {
+    result = result.replaceAll('{$i}', args[i]);
+    result = result.replaceAll('%${i + 1}\$s', args[i]);
+    result = result.replaceAll('\$args{$i}', args[i]);
+  }
+  return result;
+}
+
 class PlaylistScreen extends StatefulWidget {
   const PlaylistScreen({super.key});
 
@@ -55,7 +66,6 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
               onPressed: () async {
                 final name = controller.text.trim();
                 if (name.isNotEmpty) {
-                  // TRUYỀN context vào để có notification
                   await Provider.of<PlaylistProvider>(context, listen: false).addPlaylist(name, context: context);
                   if (context.mounted) Navigator.pop(context);
                 }
@@ -155,7 +165,6 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
               onPressed: () async {
                 final newName = controller.text.trim();
                 if (newName.isNotEmpty) {
-                  // TRUYỀN context vào để có notification
                   await Provider.of<PlaylistProvider>(context, listen: false)
                       .renamePlaylist(playlist.id, newName, context: context);
                   if (context.mounted) Navigator.pop(context);
@@ -183,173 +192,44 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
         final playlists = playlistProvider.playlists;
         final likedSongs = likedSongsProvider.likedSongs;
 
-        return Scaffold(
-          backgroundColor: backgroundColor,
-          appBar: AppBar(
-            backgroundColor: backgroundColor,
-            title: Text(
-              tr('your_playlists'),
-              style: TextStyle(fontWeight: FontWeight.bold, color: mainTextColor),
-            ),
-            elevation: 0,
-            centerTitle: true,
-            actions: [
-              IconButton(
-                icon: Icon(Icons.add, color: iconColor),
-                tooltip: tr('create_playlist'),
-                onPressed: () => _showCreatePlaylistDialog(context),
-              ),
-            ],
-          ),
-          body: playlistProvider.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            itemCount: playlists.length + 1, // +1 cho "Nhạc đã thích"
-            separatorBuilder: (context, idx) => const SizedBox(height: 30),
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                // Playlist Nhạc đã thích ghim cố định đầu danh sách
-                return Material(
-                  color: isDark ? Colors.black : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  elevation: 2,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(22),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF1DB954), Color(0xFF191414)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: Icon(Icons.favorite, color: mainTextColor, size: 33),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tr('liked_songs'),
-                                  style: TextStyle(
-                                    color: mainTextColor,
-                                    fontSize: 19,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  tr('all_liked_songs'),
-                                  style: TextStyle(
-                                    color: subTextColor,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
-                            tooltip: tr('play_all'),
-                            onPressed: likedSongs.isEmpty
-                                ? null
-                                : () => playAllLikedSongs(context, likedSongs),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }
-              // Các playlist tự tạo
-              final playlist = playlists[index - 1];
-              final songCount = playlist.songs.length;
+        // *** ĐÃ BỎ AppBar ở đây, chỉ trả về body ***
+        return playlistProvider.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          itemCount: playlists.length + 1, // +1 cho "Nhạc đã thích"
+          separatorBuilder: (context, idx) => const SizedBox(height: 30),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              // Playlist Nhạc đã thích ghim cố định đầu danh sách
               return Material(
-                color: isDark ? Colors.grey[900] : Colors.grey[100],
+                color: isDark ? Colors.black : Colors.white,
                 borderRadius: BorderRadius.circular(22),
-                elevation: 3,
+                elevation: 2,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(22),
                   onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: backgroundColor,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                      ),
-                      builder: (_) => _PlaylistDetailSheet(
-                        playlistId: playlist.id,
-                        fetchPreviewUrl: fetchPreviewUrl,
-                        playSongWithFreshPreview: playSongWithFreshPreview,
-                        playAllWithFreshPreview: playAllWithFreshPreview,
-                        mainTextColor: mainTextColor,
-                        subTextColor: subTextColor,
-                        iconColor: iconColor,
-                        isDark: isDark,
-                      ),
-                    );
-                  },
-                  onLongPress: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                      ),
-                      builder: (_) => _PlaylistOptionsMenu(
-                        playlist: playlist,
-                        onRename: () => _showRenamePlaylistDialog(context, playlist),
-                        iconColor: iconColor,
-                        mainTextColor: mainTextColor,
-                      ),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
                     );
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                     child: Row(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: playlist.songs.isNotEmpty
-                              ? CachedNetworkImage(
-                            imageUrl: playlist.songs.first.coverUrl ?? '',
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              width: 60,
-                              height: 60,
-                              color: Colors.black26,
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF1DB954), Color(0xFF191414)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            errorWidget: (context, url, error) => Container(
-                              width: 60,
-                              height: 60,
-                              color: Colors.black26,
-                              child: Icon(Icons.music_note, color: subTextColor),
-                            ),
-                          )
-                              : Container(
-                            width: 60,
-                            height: 60,
-                            color: Colors.black26,
-                            child: Icon(Icons.queue_music, color: subTextColor),
                           ),
+                          child: Icon(Icons.favorite, color: mainTextColor, size: 33),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -357,7 +237,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                playlist.name,
+                                tr('liked_songs'),
                                 style: TextStyle(
                                   color: mainTextColor,
                                   fontSize: 19,
@@ -366,7 +246,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                tr('song_count', args: ['$songCount']),
+                                tr('all_liked_songs'),
                                 style: TextStyle(
                                   color: subTextColor,
                                   fontSize: 13,
@@ -378,17 +258,128 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
                         IconButton(
                           icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
                           tooltip: tr('play_all'),
-                          onPressed: playlist.songs.isEmpty
+                          onPressed: likedSongs.isEmpty
                               ? null
-                              : () => playAllWithFreshPreview(playlist.songs, context),
+                              : () => playAllLikedSongs(context, likedSongs),
                         ),
                       ],
                     ),
                   ),
                 ),
               );
-            },
-          ),
+            }
+            // Các playlist tự tạo
+            final playlist = playlists[index - 1];
+            final songCount = playlist.songs.length;
+            return Material(
+              color: isDark ? Colors.grey[900] : Colors.grey[100],
+              borderRadius: BorderRadius.circular(22),
+              elevation: 3,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(22),
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: backgroundColor,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+                    ),
+                    builder: (_) => _PlaylistDetailSheet(
+                      playlistId: playlist.id,
+                      fetchPreviewUrl: fetchPreviewUrl,
+                      playSongWithFreshPreview: playSongWithFreshPreview,
+                      playAllWithFreshPreview: playAllWithFreshPreview,
+                      mainTextColor: mainTextColor,
+                      subTextColor: subTextColor,
+                      iconColor: iconColor,
+                      isDark: isDark,
+                    ),
+                  );
+                },
+                onLongPress: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: isDark ? Colors.grey[900] : Colors.grey[200],
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+                    ),
+                    builder: (_) => _PlaylistOptionsMenu(
+                      playlist: playlist,
+                      onRename: () => _showRenamePlaylistDialog(context, playlist),
+                      iconColor: iconColor,
+                      mainTextColor: mainTextColor,
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: playlist.songs.isNotEmpty
+                            ? CachedNetworkImage(
+                          imageUrl: playlist.songs.first.coverUrl ?? '',
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.black26,
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.black26,
+                            child: Icon(Icons.music_note, color: subTextColor),
+                          ),
+                        )
+                            : Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.black26,
+                          child: Icon(Icons.queue_music, color: subTextColor),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              playlist.name,
+                              style: TextStyle(
+                                color: mainTextColor,
+                                fontSize: 19,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              manualFormat(tr('song_count'), ['$songCount']),
+                              style: TextStyle(
+                                color: subTextColor,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.play_circle_fill, color: Colors.greenAccent, size: 36),
+                        tooltip: tr('play_all'),
+                        onPressed: playlist.songs.isEmpty
+                            ? null
+                            : () => playAllWithFreshPreview(playlist.songs, context),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -471,7 +462,7 @@ class _PlaylistDetailSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        tr('song_count', args: ['$songCount']),
+                        manualFormat(tr('song_count'), ['$songCount']),
                         style: TextStyle(color: subTextColor, fontSize: 14),
                       ),
                     ],
@@ -519,7 +510,6 @@ class _PlaylistDetailSheet extends StatelessWidget {
                         child: const Icon(Icons.delete, color: Colors.white),
                       ),
                       onDismissed: (_) async {
-                        // TRUYỀN context vào để có notification
                         await Provider.of<PlaylistProvider>(context, listen: false)
                             .removeSongFromPlaylist(playlist.id, song, context: context);
                       },
@@ -590,7 +580,6 @@ class _PlaylistDetailSheet extends StatelessWidget {
                             color: isDark ? Colors.grey[900] : Colors.grey[200],
                             onSelected: (value) async {
                               if (value == 'remove') {
-                                // TRUYỀN context vào để có notification
                                 await Provider.of<PlaylistProvider>(context, listen: false)
                                     .removeSongFromPlaylist(playlist.id, song, context: context);
                               }
@@ -652,7 +641,6 @@ class _PlaylistOptionsMenu extends StatelessWidget {
             leading: const Icon(Icons.delete, color: Colors.red),
             title: Text(tr('delete_playlist'), style: const TextStyle(color: Colors.red)),
             onTap: () async {
-              // TRUYỀN context vào để có notification
               await Provider.of<PlaylistProvider>(context, listen: false)
                   .removePlaylist(playlist.id, context: context);
               Navigator.pop(context);

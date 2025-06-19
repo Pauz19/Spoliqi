@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:easy_localization/easy_localization.dart';
-
+import 'screens/settings_page.dart';
 import 'screens/home_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/splash_screen.dart';
@@ -14,10 +14,12 @@ import 'providers/player_provider.dart';
 import 'providers/playlist_provider.dart';
 import 'providers/liked_songs_provider.dart';
 import 'providers/theme_provider.dart';
-import 'providers/notification_provider.dart'; // Thêm dòng này
-import 'widgets/notification_dialog.dart'; // Thêm dòng này
+import 'providers/notification_provider.dart';
+import 'widgets/notification_dialog.dart';
 import 'screens/playlist_screen.dart';
 import 'login_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../widgets/account_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,7 +44,6 @@ void main() async {
   );
 }
 
-/// Widget lắng nghe trạng thái mạng và show thông báo mất/kết nối lại
 class NetworkStatusListener extends StatefulWidget {
   final Widget child;
   const NetworkStatusListener({super.key, required this.child});
@@ -127,7 +128,7 @@ class SpotifyCloneApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PlaylistProvider()),
         ChangeNotifierProvider(create: (_) => LikedSongsProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()), // Thêm dòng này
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -135,10 +136,10 @@ class SpotifyCloneApp extends StatelessWidget {
             title: 'Spotify Clone',
             theme: ThemeData(
               brightness: Brightness.light,
-              scaffoldBackgroundColor: const Color(0xFFF6F6F6), // nền xám nhạt dịu mắt
+              scaffoldBackgroundColor: const Color(0xFFF6F6F6),
               primaryColor: Colors.greenAccent,
               dividerColor: Colors.grey.shade300,
-              iconTheme: const IconThemeData(color: Colors.black87), // icon tối cho theme sáng
+              iconTheme: const IconThemeData(color: Colors.black87),
               colorScheme: ColorScheme.light(
                 primary: Colors.greenAccent,
                 secondary: Colors.greenAccent,
@@ -208,7 +209,17 @@ class SpotifyCloneApp extends StatelessWidget {
             ),
             themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             debugShowCheckedModeBanner: false,
-            home: const RootScreen(),
+
+            // ADD THIS: Provide named route support for /home, /search, /playlist
+            initialRoute: '/',
+            routes: {
+              '/': (context) => const RootScreen(),
+              '/home': (context) => HomeScreen(),
+              '/search': (context) => const SearchScreen(),
+              '/playlist': (context) => const PlaylistScreen(),
+            },
+
+            // keep home property null to avoid conflict with initialRoute
             builder: (context, child) => NetworkStatusListener(child: child!),
             localizationsDelegates: context.localizationDelegates,
             supportedLocales: context.supportedLocales,
@@ -237,7 +248,6 @@ class _RootScreenState extends State<RootScreen> {
       builder: (context, snapshot) {
         final user = snapshot.data;
 
-        // Chỉ clear/load playlist, liked songs và dừng nhạc khi thực sự đổi trạng thái user
         if (user != _lastUser) {
           _lastUser = user;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -247,11 +257,11 @@ class _RootScreenState extends State<RootScreen> {
             if (user == null) {
               playlistProvider.clearPlaylists();
               likedSongsProvider.clearLikedSongs();
-              playerProvider.clear(); // Dừng và clear nhạc khi đăng xuất
+              playerProvider.clear();
             } else {
               playlistProvider.loadPlaylists();
               likedSongsProvider.loadLikedSongs();
-              playerProvider.clear(); // Clear nhạc khi đổi tài khoản
+              playerProvider.clear();
             }
           });
         }
@@ -278,11 +288,20 @@ class MainWrapper extends StatefulWidget {
 class _MainWrapperState extends State<MainWrapper> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    SearchScreen(),
-    PlaylistScreen(),
-  ];
+  // Dùng GlobalKey để hỗ trợ reload HomeScreen khi nhấn lại icon Home
+  final GlobalKey<HomeScreenState> homeKey = GlobalKey<HomeScreenState>();
+
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      HomeScreen(key: homeKey),
+      const SearchScreen(),
+      const PlaylistScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -302,7 +321,6 @@ class _MainWrapperState extends State<MainWrapper> {
               : tr('playlist'),
         ),
         actions: [
-          // Nút notification
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {
@@ -311,6 +329,39 @@ class _MainWrapperState extends State<MainWrapper> {
                 builder: (_) => const NotificationDialog(),
               );
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
+            },
+          ),
+          // Avatar
+          Padding(
+            padding: const EdgeInsets.only(right: 8, left: 8),
+            child: GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => AccountDialog(user: FirebaseAuth.instance.currentUser),
+                );
+              },
+              child: CircleAvatar(
+                radius: 18,
+                backgroundImage: FirebaseAuth.instance.currentUser?.photoURL != null
+                    ? NetworkImage(FirebaseAuth.instance.currentUser!.photoURL!)
+                    : null,
+                child: FirebaseAuth.instance.currentUser?.photoURL == null
+                    ? const Icon(Icons.person, size: 22)
+                    : null,
+                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey[800]
+                    : Colors.grey[300],
+              ),
+            ),
           ),
         ],
       ),
@@ -346,6 +397,9 @@ class _MainWrapperState extends State<MainWrapper> {
           ),
         ],
         onTap: (index) {
+          if (index == 0 && _selectedIndex == 0) {
+            homeKey.currentState?.refresh();
+          }
           setState(() {
             _selectedIndex = index;
           });
@@ -355,7 +409,6 @@ class _MainWrapperState extends State<MainWrapper> {
   }
 }
 
-/// Hàm đăng xuất dùng chung cho toàn app, đảm bảo Google SignOut + Firebase SignOut
 Future<void> signOutUser(BuildContext context) async {
   try {
     await GoogleSignIn().signOut();
