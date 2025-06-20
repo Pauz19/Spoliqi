@@ -45,7 +45,6 @@ dependencies:
   cloud_firestore: ^4.17.2
   connectivity_plus: ^6.0.3
   easy_localization: ^3.0.0
-  just_audio_background: ^0.0.1-beta.13
 
 
   # The following adds the Cupertino Icons font to your application.
