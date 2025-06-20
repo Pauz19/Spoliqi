@@ -349,17 +349,23 @@ class _MainWrapperState extends State<MainWrapper> {
                   builder: (_) => AccountDialog(user: FirebaseAuth.instance.currentUser),
                 );
               },
-              child: CircleAvatar(
-                radius: 18,
-                backgroundImage: FirebaseAuth.instance.currentUser?.photoURL != null
-                    ? NetworkImage(FirebaseAuth.instance.currentUser!.photoURL!)
-                    : null,
-                child: FirebaseAuth.instance.currentUser?.photoURL == null
-                    ? const Icon(Icons.person, size: 22)
-                    : null,
-                backgroundColor: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey[800]
-                    : Colors.grey[300],
+              child: StreamBuilder<User?>(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (context, snapshot) {
+                  final user = snapshot.data;
+                  return CircleAvatar(
+                    radius: 18,
+                    backgroundImage: user?.photoURL != null
+                        ? NetworkImage(user!.photoURL!)
+                        : null,
+                    child: user?.photoURL == null
+                        ? const Icon(Icons.person, size: 22)
+                        : null,
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]
+                        : Colors.grey[300],
+                  );
+                },
               ),
             ),
           ),
