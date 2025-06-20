@@ -13,7 +13,7 @@ class AccountAvatar extends StatelessWidget {
       onTap: () {
         showDialog(
           context: context,
-          builder: (_) => AccountDialog(user: user),
+          builder: (_) => const AccountDialog(), // Không truyền user nữa!
         );
       },
       child: CircleAvatar(

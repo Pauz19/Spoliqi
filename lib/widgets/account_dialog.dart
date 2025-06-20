@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'edit_profile_dialog.dart';
 
-class AccountDialog extends StatelessWidget {
-  final User? user;
-  const AccountDialog({super.key, required this.user});
+class AccountDialog extends StatefulWidget {
+  const AccountDialog({super.key});
 
   @override
+  State<AccountDialog> createState() => _AccountDialogState();
+}
+
+class _AccountDialogState extends State<AccountDialog> {
+  @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const SizedBox.shrink();
 
-    final displayName = user!.displayName ?? user!.email ?? tr('unknown_name');
-    final email = user!.email ?? '';
-    final photoUrl = user!.photoURL;
-    final uid = user!.uid;
+    final displayName = user.displayName ?? user.email ?? tr('unknown_name');
+    final email = user.email ?? '';
+    final photoUrl = user.photoURL;
+    final uid = user.uid;
 
     return AlertDialog(
       backgroundColor: Colors.grey[900],
@@ -26,15 +32,32 @@ class AccountDialog extends StatelessWidget {
             Stack(
               alignment: Alignment.bottomRight,
               children: [
-                CircleAvatar(
-                  radius: 44,
-                  backgroundColor: Colors.white24,
-                  backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                  child: photoUrl == null
-                      ? const Icon(Icons.person, size: 54, color: Colors.white54)
-                      : null,
+                GestureDetector(
+                  onTap: () async {
+                    final result = await showDialog(
+                      context: context,
+                      builder: (_) => EditProfileDialog(
+                        currentName: user.displayName,
+                        currentPhotoUrl: user.photoURL,
+                        currentEmail: user.email,
+                      ),
+                    );
+                    if (result == true) {
+                      await FirebaseAuth.instance.currentUser?.reload();
+                      setState(() {});
+                      Navigator.of(context).pop(true); // TRẢ VỀ TRUE ĐỂ MAINWRAPPER nhận biết cập nhật!
+                    }
+                  },
+                  child: CircleAvatar(
+                    radius: 44,
+                    backgroundColor: Colors.white24,
+                    backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                    child: photoUrl == null
+                        ? const Icon(Icons.person, size: 54, color: Colors.white54)
+                        : null,
+                  ),
                 ),
-                if (user!.providerData.any((p) => p.providerId == 'google.com'))
+                if (user.providerData.any((p) => p.providerId == 'google.com'))
                   Positioned(
                     right: 2,
                     bottom: 2,

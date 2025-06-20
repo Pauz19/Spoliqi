@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -290,6 +291,16 @@ class _MainWrapperState extends State<MainWrapper> {
 
   // Dùng GlobalKey để hỗ trợ reload HomeScreen khi nhấn lại icon Home
   final GlobalKey<HomeScreenState> homeKey = GlobalKey<HomeScreenState>();
+  Future<void> _showAccountDialog() async {
+    final result = await showDialog(
+      context: context,
+      builder: (_) => const AccountDialog(),
+    );
+    if (result == true) {
+      await FirebaseAuth.instance.currentUser?.reload();
+      setState(() {});
+    }
+  }
 
   late final List<Widget> _screens;
 
@@ -332,27 +343,25 @@ class _MainWrapperState extends State<MainWrapper> {
           ),
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const SettingsPage()),
               );
+              if (result == true) {
+                await FirebaseAuth.instance.currentUser?.reload();
+                setState(() {});
+              }
             },
           ),
           // Avatar
           Padding(
             padding: const EdgeInsets.only(right: 8, left: 8),
             child: GestureDetector(
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (_) => AccountDialog(user: FirebaseAuth.instance.currentUser),
-                );
-              },
-              child: StreamBuilder<User?>(
-                stream: FirebaseAuth.instance.authStateChanges(),
-                builder: (context, snapshot) {
-                  final user = snapshot.data;
+              onTap: _showAccountDialog,
+              child: Builder(
+                builder: (context) {
+                  final user = FirebaseAuth.instance.currentUser;
                   return CircleAvatar(
                     radius: 18,
                     backgroundImage: user?.photoURL != null
@@ -368,7 +377,7 @@ class _MainWrapperState extends State<MainWrapper> {
                 },
               ),
             ),
-          ),
+          )
         ],
       ),
       body: Stack(

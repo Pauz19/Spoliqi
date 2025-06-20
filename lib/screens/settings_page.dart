@@ -20,11 +20,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final locale = context.locale;
-    if (locale.languageCode == 'en') {
-      selectedLanguage = 'English';
-    } else {
-      selectedLanguage = 'Tiếng Việt';
-    }
+    selectedLanguage = locale.languageCode == 'en' ? 'English' : 'Tiếng Việt';
   }
 
   @override
@@ -63,7 +59,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         ? user!.displayName![0].toUpperCase()
                         : 'U'),
                     style: const TextStyle(
-                        color: Colors.black, fontWeight: FontWeight.bold, fontSize: 28),
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 28),
                   )
                       : null,
                 ),
@@ -92,7 +90,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.edit, color: iconColor),
+                  icon: Icon(Icons.edit, color: iconColor), // <-- phải là Icons.edit
                   onPressed: () async {
                     if (user == null) return;
                     final updated = await showDialog(
@@ -103,7 +101,10 @@ class _SettingsPageState extends State<SettingsPage> {
                         currentEmail: user.email,
                       ),
                     );
-                    if (updated == true) setState(() {});
+                    if (updated == true) {
+                      await FirebaseAuth.instance.currentUser?.reload();
+                      if (context.mounted) Navigator.of(context).pop(true);
+                    }
                   },
                 ),
               ],
@@ -125,7 +126,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           Divider(color: divider, thickness: 1),
 
-          // Chế độ hiển thị
+          // Chế độ hiển thị (Dark/Light)
           SwitchListTile(
             secondary: Icon(Icons.dark_mode, color: iconColor),
             title: Text('dark_mode'.tr(), style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
@@ -196,7 +197,7 @@ class _SettingsPageState extends State<SettingsPage> {
               );
               if (confirm == true) {
                 await FirebaseAuth.instance.signOut();
-                if (context.mounted) Navigator.of(context).pop();
+                if (mounted) Navigator.of(context).pop();
               }
             },
           ),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:provider/provider.dart'; // Thêm dòng này
-import '../providers/notification_provider.dart'; // Thêm dòng này
+import 'package:provider/provider.dart';
+import '../providers/notification_provider.dart';
 
 class EditProfileDialog extends StatefulWidget {
   final String? currentName;
@@ -64,6 +64,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         }
       }
 
+      // Đảm bảo trả về true để widget cha reload user và ép rebuild avatar
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted) Navigator.pop(context, true);
       });
