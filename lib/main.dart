@@ -134,7 +134,7 @@ class SpotifyCloneApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
-            title: 'Spotify Clone',
+            title: 'Spoliqi',
             theme: ThemeData(
               brightness: Brightness.light,
               scaffoldBackgroundColor: const Color(0xFFF6F6F6),
